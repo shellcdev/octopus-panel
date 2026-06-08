@@ -58,6 +58,13 @@
 | `role-templates.md` | — | 角色模板库（10组36个角色） |
 | `discussion-examples.md` | — | 7个完整讨论案例 |
 
+### scripts/ 目录
+
+| 脚本 | 用途 |
+|---|---|
+| `split_skill.py` | 将 SKILL.md 拆分为核心+子文件（整理时用） |
+| `archive_discussion.py` | 将讨论结果归档至知识库（关键词提取+历史关联） |
+
 ---
 
 ## 🚀 快速上手
