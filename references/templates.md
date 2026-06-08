@@ -446,3 +446,16 @@ spawn子Agent时，prompt必须包含以下模块：
 | `references/templates.md` | 角色卡/Prompt/讨论板/小结标准格式 | 生成角色前必读 |
 | `references/role-templates.md` | 已验证的角色模板库 + 前置风控三问 | 生成角色时调用 |
 | `references/discussion-examples.md` | 7个完整讨论案例（含边界场景） | 质量核对或格式参照 |
+
+
+## 🎯 开杠极速模式 Prompt 模板（模式⑧）
+
+讨论议题：[议题]
+你的角色：[角色名]（[立场]）
+你的风格锁：[风格锁]
+你的核心论点：[核心论点]
+
+石叔诊断（≤100字）：
+[诊断内容]
+
+现在轮到你发言（第1轮，≤50字）：
