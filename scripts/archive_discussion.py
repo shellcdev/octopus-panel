@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-archive_discussion.py - 讨论结果归档至知识库（增强版 v2.0）
-用法：
-  python archive_discussion.py --question "..." --conclusion "..." --roles roles.json --log discussion_log.txt
-增强功能：
-  1. 自动从讨论日志提取关键转折点（立场变化检测）
-  2. 自动匹配历史归档（关键词重叠≥2则关联）
-  3. 归档文件包含完整讨论板
-  4. 自动生成标签（从问题提取关键词）
-  5. 支持增量更新（同一话题追加到已有归档）
+archive_discussion.py - 讨论结果归档至知识库（增强版 v2.1）
+新增：讨论多样性评测（#39）- 按「议题类型×角色组合」去重检测
 """
 
 import argparse
@@ -17,6 +10,80 @@ import codecs
 import os
 import datetime
 import re
+
+
+# --- 新增：多样性评测相关函数（#39）---
+
+DIVERSITY_HISTORY_FILE = "memory/discussion_diversity.json"
+
+
+def classify_question_type(question):
+    """简单关键词匹配，将问题分类为议题类型"""
+    q = question.lower()
+    type_rules = [
+        ("买房/租房/住房", ["买房", "购房", "租房", "住房", "首付", "房贷", "月供"]),
+        ("职业/辞职/创业", ["辞职", "创业", "跳槽", "转行", "找工作", "offer", "失业"]),
+        ("婚恋/家庭", ["结婚", "离婚", "恋爱", "出轨", "二胎", "生孩子", "育儿"]),
+        ("投资/理财", ["投资", "理财", "股票", "基金", "杠杆", "风险", "收益"]),
+        ("教育/升学", ["教育", "升学", "出国", "留学", "高考", "考研", "择校"]),
+        ("健康/医疗", ["健康", "医疗", "手术", "体检", "生病"]),
+        ("人际/社交", ["朋友", "同事", "领导", "人际", "社交", "吵架"]),
+    ]
+    for type_name, keywords in type_rules:
+        if any(kw in q for kw in keywords):
+            return type_name
+    return "其他"
+
+
+def load_diversity_history():
+    """加载历史讨论记录"""
+    if not os.path.exists(DIVERSITY_HISTORY_FILE):
+        return []
+    try:
+        with codecs.open(DIVERSITY_HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def save_diversity_history(history):
+    """保存历史讨论记录"""
+    os.makedirs(os.path.dirname(DIVERSITY_HISTORY_FILE) or ".", exist_ok=True)
+    with codecs.open(DIVERSITY_HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
+
+def check_combo_duplicate(question_type, role_names, history, max_recent=5):
+    """检测「议题类型×角色组合」是否在最近max_recent场中重复出现≥2次
+    Returns: (is_duplicate, count, recent_matches)
+    """
+    recent = history[-max_recent:] if len(history) >= max_recent else history
+    combo_key = (question_type, tuple(sorted(role_names)))
+    matches = [h for h in recent if h.get("combo_key") == combo_key]
+    return (len(matches) >= 2, len(matches), matches)
+
+
+def record_discussion(question, question_type, role_names, archive_file):
+    """记录本次讨论到历史"""
+    history = load_diversity_history()
+    combo_key = (question_type, tuple(sorted(role_names)))
+    record = {
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "question": question[:50],
+        "question_type": question_type,
+        "roles": role_names,
+        "combo_key": combo_key,
+        "archive_file": archive_file,
+    }
+    history.append(record)
+    # 只保留最近50条
+    if len(history) > 50:
+        history = history[-50:]
+    save_diversity_history(history)
+    return history
+
+
+# --- 原有函数（保持不变）---
 
 def extract_keywords(text):
     """简单关键词提取（中文）"""
@@ -140,7 +207,7 @@ def build_archive_content(question, conclusion, roles, timestamp_iso, log_conten
 
 
 def main():
-    parser = argparse.ArgumentParser(description="讨论结果归档（增强版 v2.0）")
+    parser = argparse.ArgumentParser(description="讨论结果归档（增强版 v2.1）")
     parser.add_argument("--question", required=True, help="原始用户问题")
     parser.add_argument("--conclusion", required=True, help="石叔总结结论")
     parser.add_argument("--roles", help="角色阵容 JSON 文件路径")
@@ -173,7 +240,20 @@ def main():
 
     print("✅ 归档完成：" + filepath)
     if related:
-        print("📂 发现相关历史归档：" + ", ".join(related))
+        print("📂 发现相关历史归档：" + "，".join(related))
+
+    # --- 新增：多样性检测（#39）---
+    role_names = [r.get("name", "未知") for r in roles] if roles else []
+    if role_names:
+        question_type = classify_question_type(args.question)
+        history = record_discussion(args.question, question_type, role_names, filename)
+        is_dup, count, matches = check_combo_duplicate(question_type, role_names, history)
+        if is_dup:
+            print("⚠️ 多样性提醒：议题类型[{}] × 角色组合{} 在最近讨论中已出现 {} 次".format(
+                question_type, role_names, count))
+            print("   石叔应在下一轮建议换人，标注「这个组合最近出现过」")
+        else:
+            print("✅ 多样性检查通过：议题类型[{}] × 角色组合{} 未重复".format(question_type, role_names))
 
 
 if __name__ == "__main__":
