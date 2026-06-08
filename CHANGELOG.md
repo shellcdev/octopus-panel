@@ -1,5 +1,33 @@
 # 版本变更日志
 
+## v2.13（2026-06-08）
+
+### 新增
+- `scripts/split_skill.py` 新建（fragment 匹配 + 代码块跳过逻辑，用于 SKILL.md 拆分）
+- `references/rules-discussion.md` 新建（387行：点名机制/角色插入/讨论板格式/阶段性小结/收敛机制/异常场景）
+- `references/summary-format.md` 新建（181行：石叔总结格式/动态终止/量化判定标准）
+- `references/roles-rules.md` 新建（164行：角色选择/增加角色/模板库管理/标签筛选器）
+- `references/rules-collab.md` 新建（229行：多人协作/真人插话/L1/L2/L3恢复/归档机制）
+
+### 变更
+- `SKILL.md` 拆分：1353行→288行核心 + 4个 references 子文件
+- `SKILL.md` 文件索引表重建（指向5个 references 子文件）
+- `SKILL.md` 异常场景章节：标题统一加三梯度处罚总规则
+- `SKILL.md` 异常场景编号重排：10/11/12/13 → 9/10/11/12（与1-8连贯）
+- `SKILL.md` 版本号 v2.11 → v2.13
+
+### 清理
+- `SKILL.md` 删除重复段落：可执行下一步分级×2、多话题场景支持×2
+- `SKILL.md` 移除 HTML 注释 `<!-- xxx -->` 共5处
+- `SKILL.md` 移除多余分隔线 `---
+
+---
+
+---`
+- `SKILL.md` 1564行 → 1366行（去重后）
+
+---
+
 ## v2.12（2026-06-08）
 
 ### 新增
