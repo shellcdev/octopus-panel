@@ -1,6 +1,6 @@
 # config.md · 八爪议事厅运行时配置
 
-> 修改此文件即可自定义路径，无需改动 SKILL.md。
+> 修改此文件即可自定义路径和偏好，无需改动 SKILL.md。
 > 路径支持绝对路径和相对于 workspace 根目录的相对路径。
 
 ## 路径
@@ -9,8 +9,23 @@
 |---|---|---|
 | workspace_root | C:\Users\Shell\.qclaw\workspace | OpenClaw workspace 根目录 |
 | user_md | {workspace_root}\USER.md | 用户偏好存储文件 |
-| archive_dir | {workspace_root}\memory\octopus-archive | 讨论归档目录 |
-| archive_file | {archive_dir}\YYYYMMDD-HHMM.md | 单次归档文件名模板 |
+| octopus_dir | {workspace_root}\memory\octopus | 八爪议事厅数据根目录 |
+| growth_dir | {octopus_dir}\growth | 角色成长数据目录（JSON 结构化数据）|
+| archive_dir | {octopus_dir}\archive | 讨论归档目录（.md 文件） |
+| archive_file | {archive_dir}\YYYYMMDD-{topic}.md | 单次归档文件名模板。{topic} 由石叔诊断的"核心矛盾"字段自动提取，≤6字 |
+
+## 偏好（v2.18 新增）
+
+> 修改偏好键即可改变系统默认值，无需改动 SKILL.md。
+> 用户通过「个性化配置指令」设置的值写入 `user_md`，会覆盖这些默认值。
+
+| 键 | 默认值 | 说明 |
+|---|---|---|
+| default_max_words | 直觉型≤60 / 平衡型≤80 / 分析型≤100 | 发言字数上限（按角色类型） |
+| default_mode | 串行 | 默认讨论模式 |
+| default_rounds | 2 | 默认讨论轮次 |
+| default_roles | 4 | 默认角色数量 |
+| consensus_5grid | 启用 | 共识进度条5格模式；设为"禁用"则为10格 |
 
 ## 用法
 
@@ -25,6 +40,6 @@ SKILL.md 和子文件中遇到路径时，按以下规则解析：
 
 换台机器？只改 workspace_root 一行：
 
-    workspace_root = /home/user/.qclaw/workspace
+    workspace_root = /home/user/.claw/workspace
 
 其余路径会自动跟随。

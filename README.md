@@ -1,4 +1,4 @@
-> 📌 版本：v2.13 | 更新：2026-06-08 | 维护者：石叔
+> 📌 版本：v2.18 | 更新：2026-06-09 | 维护者：石叔
 
 # 八爪议事厅 · 导航中枢
 
@@ -20,8 +20,8 @@
 | 文件 | 读什么 | 何时读 |
 |---|---|---|
 | `references/templates.md` | 角色卡格式、spawn prompt、讨论板格式、阶段性小结格式 | 生成角色前 |
-| `references/role-templates.md` | 已验证的角色模板库（10组36个角色） | 生成角色时调用 |
-| `references/discussion-examples.md` | 7个完整讨论案例（含边界场景） | 质量核对或格式参照 |
+| `references/role-templates.md` | 已验证的角色模板库（10组37个角色） | 生成角色时调用 |
+| `references/discussion-examples.md` | 20个完整讨论案例（含边界场景） | 质量核对或格式参照 |
 
 ---
 
@@ -40,23 +40,23 @@
 
 ### 核心文件
 
-- **SKILL.md**（288行）— 总览、硬性/柔性规则、四种讨论模式、交互指令、反馈通道
+- **SKILL.md**（474行）— 总览、硬性/柔性规则、四种讨论模式、🎩轮次滤镜、交互指令、反馈通道
 - **README.md**（本文件）— 导航中枢
 - **CHANGELOG.md** — 版本变更历史
-- **config.md** — 运行时路径配置（4个路径键）
+- **config.md** — 运行时路径配置（4个路径键+5个偏好键）
 
 ### references/ 目录
 
 | 文件 | 行数 | 内容 |
 |---|---|---|
 | `jargon.md` | ~80 | 术语通俗释义 |
-| `rules-discussion.md` | 387 | 讨论规则（点名/讨论板/小结/异常场景） |
-| `summary-format.md` | 181 | 总结格式 + 量化判定 |
+| `rules-discussion.md` | 573 | 讨论规则（点名/讨论板/小结/收敛/帽子兼容/异常场景） |
+| `summary-format.md` | 325 | 总结格式（4种类型） + 量化判定 + 评分卡 |
 | `roles-rules.md` | 164 | 角色管理（选择/增加/替补/模板库） |
 | `rules-collab.md` | 229 | 协作与恢复（多人/L1-L3/归档） |
-| `templates.md` | — | 标准模板参考 |
-| `role-templates.md` | — | 角色模板库（10组36个角色） |
-| `discussion-examples.md` | — | 7个完整讨论案例 |
+| `templates.md` | — | 标准模板参考（含🎩帽子轮Prompt模板） |
+| `role-templates.md` | — | 角色模板库（10组37个角色） |
+| `discussion-examples.md` | — | 20个完整讨论案例 |
 
 ### scripts/ 目录
 
