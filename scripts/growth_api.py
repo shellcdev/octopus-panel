@@ -1,0 +1,741 @@
+# -*- coding: utf-8 -*-
+"""
+growth_api.py - Role Growth System API (Phase 0)
+
+Central interface for all growth_record read/write operations.
+Other modules (archive_discussion.py, growth_renderer.py, etc.) MUST
+go through this API instead of accessing growth_record directly.
+
+Lifecycle:
+  - Data is stored as a single JSON file: {growth_dir}/growth_record.json
+  - Each discussion archive triggers update_stance_history() and update_relationship()
+  - check_achievements() and update_auto_tags() run after each update
+  - get_spawn_inject() is called by the spawning system to inject history context
+
+Relationship network modes:
+  auto    = collect always, show only when condition triggered (default)
+  always  = collect always, show always
+  never   = do not collect, do not show
+
+Session override:
+  Use set_session_override(False) for "this round, no relationships".
+  Automatically cleared after discussion ends.
+"""
+
+import os
+import json
+import codecs
+import datetime
+import shutil
+from copy import deepcopy
+
+# ─── Config (lazy-loaded from config.md) ───
+
+_CONFIG_CACHE = None
+
+def _load_config():
+    """Parse config.md and return a dict of key-value pairs."""
+    global _CONFIG_CACHE
+    if _CONFIG_CACHE is not None:
+        return _CONFIG_CACHE
+
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config.md')
+    cfg = {}
+    try:
+        with codecs.open(config_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if '|' in line and line.count('|') >= 3:
+                    parts = [p.strip() for p in line.split('|')]
+                    if len(parts) >= 4 and parts[1] and parts[2] and parts[1] != '键':
+                        key = parts[1]
+                        val = parts[2]
+                        # Resolve {workspace_root} references
+                        if '{workspace_root}' in val and 'workspace_root' in cfg:
+                            val = val.replace('{workspace_root}', cfg['workspace_root'])
+                        if '{octopus_dir}' in val and 'octopus_dir' in cfg:
+                            val = val.replace('{octopus_dir}', cfg['octopus_dir'])
+                        cfg[key] = val
+    except FileNotFoundError:
+        pass
+
+    # Apply defaults for keys that may not be in config.md yet
+    defaults = {
+        'workspace_root': os.path.expanduser('~/.qclaw/workspace'),
+        'growth_dir': os.path.join(os.path.expanduser('~/.qclaw/workspace'), 'memory', 'octopus', 'growth'),
+        'archive_dir': os.path.join(os.path.expanduser('~/.qclaw/workspace'), 'memory', 'octopus', 'archive'),
+        'stance_history_max_entries': '10',
+        'stance_history_skip_sessions': '',
+        'relationship_network_enabled': 'false',
+        'relationship_network_mode': 'auto',
+    }
+    for k, v in defaults.items():
+        if k not in cfg or not cfg[k]:
+            cfg[k] = v
+
+    _CONFIG_CACHE = cfg
+    return cfg
+
+
+def _get_config(key, default=''):
+    cfg = _load_config()
+    return cfg.get(key, default)
+
+
+def _get_growth_dir():
+    return _get_config('growth_dir')
+
+
+def _get_growth_filepath():
+    return os.path.join(_get_growth_dir(), 'growth_record.json')
+
+
+def _get_schema_version_filepath():
+    return os.path.join(_get_growth_dir(), 'schema_version.txt')
+
+
+# ─── Data I/O ───
+
+def _ensure_dir():
+    """Create growth data directory if it doesn't exist."""
+    d = _get_growth_dir()
+    os.makedirs(d, exist_ok=True)
+
+
+def _read_growth_record():
+    """Read full growth_record from disk. Returns list of role dicts."""
+    fp = _get_growth_filepath()
+    if not os.path.isfile(fp):
+        return []
+    try:
+        with codecs.open(fp, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        # Support both list and dict-with-version wrapper
+        if isinstance(data, dict):
+            return data.get('roles', [])
+        return data
+    except (json.JSONDecodeError, ValueError):
+        return []
+
+
+def _write_growth_record(roles):
+    """Write full growth_record to disk. Handles version and atomic write."""
+    _ensure_dir()
+    fp = _get_growth_filepath()
+    data = {
+        'version': _get_current_schema_version(),
+        'updated_at': datetime.datetime.now().isoformat(),
+        'roles': roles,
+    }
+    # Atomic write: write to tmp, then rename
+    tmp_fp = fp + '.tmp'
+    with codecs.open(tmp_fp, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    if os.path.isfile(fp):
+        os.remove(fp)
+    os.rename(tmp_fp, fp)
+
+
+def _get_current_schema_version():
+    """Read current schema version from schema_version.txt, default 1."""
+    fp = _get_schema_version_filepath()
+    if os.path.isfile(fp):
+        with codecs.open(fp, 'r', encoding='utf-8') as f:
+            try:
+                return int(f.read().strip())
+            except ValueError:
+                return 1
+    return 1
+
+
+def _set_schema_version(version):
+    """Write schema version to file."""
+    _ensure_dir()
+    fp = _get_schema_version_filepath()
+    with codecs.open(fp, 'w', encoding='utf-8') as f:
+        f.write(str(version))
+
+
+def _find_role(roles, role_id):
+    """Find role by ID in the roles list. Returns (index, dict) or (None, None)."""
+    for i, r in enumerate(roles):
+        if r.get('role_id') == role_id:
+            return i, r
+    return None, None
+
+
+# ─── Session-level override (temporary per-discussion) ───
+
+_session_relationship_override = None
+# None = follow global config
+# False = "this round, no relationships"
+# True  = "this round, restore relationships"
+
+
+def set_session_override(value):
+    """Set temporary relationship override for current discussion."""
+    global _session_relationship_override
+    _session_relationship_override = value
+
+
+def clear_session_override():
+    """Clear session override (call after discussion ends)."""
+    global _session_relationship_override
+    _session_relationship_override = None
+
+
+# ─── Core Public API (7 functions) ───
+
+def get_role_growth(role_id):
+    """
+    Get growth_record for a specific role.
+    Returns dict (with defaults for missing fields) or None if role not found.
+    """
+    roles = _read_growth_record()
+    _, role = _find_role(roles, role_id)
+    if role is None:
+        return None
+    return role
+
+
+def update_stance_history(role_id, session_id, topic, stance, score):
+    """
+    Append a stance history entry. Automatically evicts oldest entries
+    when exceeding stance_history_max_entries.
+    """
+    roles = _read_growth_record()
+    idx, role = _find_role(roles, role_id)
+
+    if role is None:
+        # First appearance: create new growth_record
+        role = {
+            'version': _get_current_schema_version(),
+            'role_id': role_id,
+            'total_sessions': 0,
+            'level': 1,
+            'exp': 0,
+            'stance_history': [],
+            'career_events': [],
+            'achievements': [],
+            'relationship_lines': [],
+            'auto_tags': [],
+            'manual_tags': [],
+        }
+        roles.append(role)
+        idx = len(roles) - 1
+
+    # Increment session count
+    role['total_sessions'] = role.get('total_sessions', 0) + 1
+
+    # Append stance entry
+    entry = {
+        'session_id': session_id,
+        'topic': topic,
+        'stance': stance,
+        'score': score,
+        'influence_weight': None,  # calculated later by calc_influence_weight()
+    }
+    stance_history = role.get('stance_history', [])
+    stance_history.append(entry)
+
+    # Evict old entries
+    max_entries = int(_get_config('stance_history_max_entries', '10'))
+    if len(stance_history) > max_entries:
+        stance_history = stance_history[-max_entries:]
+
+    role['stance_history'] = stance_history
+    _write_growth_record(roles)
+    return role
+
+
+def update_relationship(role_id, co_role_id, relation_type='neutral'):
+    """
+    Update relationship line between two roles.
+    - Increments co_sessions count
+    - Sets relation_type on first encounter
+    - Updates status based on co_sessions count
+    - If relationship_network_mode is 'never', skips entirely (no collection)
+
+    Returns True if updated, False if skipped (never mode).
+    """
+    mode = _get_config('relationship_network_mode', 'auto')
+    if mode == 'never':
+        return False
+
+    roles = _read_growth_record()
+    idx, role = _find_role(roles, role_id)
+
+    # Ensure role exists in growth_record
+    if role is None:
+        role = {
+            'version': _get_current_schema_version(),
+            'role_id': role_id,
+            'total_sessions': 0,
+            'level': 1,
+            'exp': 0,
+            'stance_history': [],
+            'career_events': [],
+            'achievements': [],
+            'relationship_lines': [],
+            'auto_tags': [],
+            'manual_tags': [],
+        }
+        roles.append(role)
+        idx = len(roles) - 1
+
+    rel_lines = role.get('relationship_lines', [])
+    found = False
+    for rel in rel_lines:
+        if rel.get('target_id') == co_role_id:
+            rel['co_sessions'] = rel.get('co_sessions', 0) + 1
+            # Upgrade status based on co_sessions count
+            cs = rel['co_sessions']
+            if cs >= 5:
+                rel['status'] = '老对手/deep'
+            elif cs >= 3:
+                rel['status'] = '老对手'
+            elif cs >= 2:
+                rel['status'] = '同场熟人'
+            else:
+                rel['status'] = '一面之缘'
+            found = True
+            break
+
+    if not found:
+        rel_lines.append({
+            'target_id': co_role_id,
+            'co_sessions': 1,
+            'relation_type': relation_type,
+            'status': '一面之缘',
+        })
+
+    role['relationship_lines'] = rel_lines
+    _write_growth_record(roles)
+    return True
+
+
+def check_achievements(role_id, session_context=None):
+    """
+    Check and unlock new achievements for a role.
+    session_context: dict with optional keys (conflict_density, evolution_efficiency,
+                     convergence_quality, consensus_jump, session_id)
+    Returns list of newly unlocked achievement IDs.
+    """
+    roles = _read_growth_record()
+    _, role = _find_role(roles, role_id)
+    if role is None:
+        return []
+
+    existing = {a['id'] for a in role.get('achievements', [])}
+    new_ones = []
+    ctx = session_context or {}
+
+    # CHANGED_THE_WIND: speech caused consensus jump >= 20%
+    if 'CHANGED_THE_WIND' not in existing:
+        if ctx.get('consensus_jump', 0) >= 20:
+            new_ones.append({
+                'id': 'CHANGED_THE_WIND',
+                'name': '改变过风向',
+                'description': '发言后共识拐点≥20%',
+                'unlock_at': ctx.get('session_id', ''),
+            })
+
+    # THREE_SESSION_VETERAN: total_sessions >= 3
+    if 'THREE_SESSION_VETERAN' not in existing:
+        if role.get('total_sessions', 0) >= 3:
+            new_ones.append({
+                'id': 'THREE_SESSION_VETERAN',
+                'name': '三朝元老',
+                'description': '累计出场≥3场',
+                'unlock_at': ctx.get('session_id', ''),
+            })
+
+    # TEN_SESSION_VETERAN: total_sessions >= 10
+    if 'TEN_SESSION_VETERAN' not in existing:
+        if role.get('total_sessions', 0) >= 10:
+            new_ones.append({
+                'id': 'TEN_SESSION_VETERAN',
+                'name': '十朝元老',
+                'description': '累计出场≥10场',
+                'unlock_at': ctx.get('session_id', ''),
+            })
+
+    # FIRST_STANCE_SHIFT: first time stance changed during session
+    if 'FIRST_STANCE_SHIFT' not in existing:
+        if ctx.get('stance_shifted'):
+            new_ones.append({
+                'id': 'FIRST_STANCE_SHIFT',
+                'name': '首次立场变化',
+                'description': '在一场讨论中改变了立场',
+                'unlock_at': ctx.get('session_id', ''),
+            })
+
+    if new_ones:
+        role['achievements'] = role.get('achievements', []) + new_ones
+        role['career_events'] = role.get('career_events', []) + [
+            {
+                'event': a['id'],
+                'description': '解锁成就：' + a['name'],
+                'occurred_at': a['unlock_at'],
+            }
+            for a in new_ones
+        ]
+        _write_growth_record(roles)
+
+    return [a['id'] for a in new_ones]
+
+
+def update_auto_tags(role_id):
+    """
+    Recalculate all auto_tags for a role.
+    Tags with confidence < 60% are stored but not included in the returned list.
+    Returns list of auto_tags dicts with confidence.
+    """
+    roles = _read_growth_record()
+    _, role = _find_role(roles, role_id)
+    if role is None:
+        return []
+
+    tags = []
+    sh = role.get('stance_history', [])
+    total_sessions = role.get('total_sessions', 0)
+    rel_lines = role.get('relationship_lines', [])
+    achievements = role.get('achievements', [])
+
+    # DU_WANG: conflict density >= 80% for 3 consecutive sessions
+    high_conflict_sessions = sum(
+        1 for s in sh if s.get('score') and s['score'] >= 80
+    )
+    if total_sessions >= 3 and high_conflict_sessions >= 3:
+        confidence = min(100, int(high_conflict_sessions / total_sessions * 100))
+        tags.append({'tag': '怼王候选', 'confidence': confidence})
+
+    # STANCE_STABLE: stance change rate < 30% (N >= 3 sessions)
+    if len(sh) >= 3:
+        stances = set(s.get('stance', '') for s in sh)
+        if len(stances) <= 2:
+            stability = max(0, 100 - (len(stances) - 1) * 35)
+            tags.append({'tag': '立场稳定', 'confidence': stability})
+
+    # SILENT_PARTNER: low contribution in 2+ consecutive sessions
+    low_contrib = sum(1 for s in sh if s.get('score') and s['score'] < 40)
+    if total_sessions >= 3 and low_contrib >= 2:
+        confidence = min(100, int(low_contrib / total_sessions * 100))
+        tags.append({'tag': '沉默搭档', 'confidence': confidence})
+
+    # CONSENSUS_CATALYST: had CHANGED_THE_WIND achievement
+    if any(a['id'] == 'CHANGED_THE_WIND' for a in achievements):
+        tags.append({'tag': '共识催化剂', 'confidence': 85})
+
+    # LV_MAO_KNIGHT: participated in green hat rounds
+    lv_count = sum(1 for s in sh if '🟢' in s.get('topic', '') or '绿' in s.get('stance', ''))
+    if lv_count >= 1:
+        confidence = min(100, 50 + lv_count * 15)
+        tags.append({'tag': '绿帽骑士', 'confidence': confidence})
+
+    # Filter low-confidence tags
+    filtered = [t for t in tags if t['confidence'] >= 60]
+
+    # Store as formatted strings
+    role['auto_tags'] = ['{}({}%)'.format(t['tag'], t['confidence']) for t in filtered]
+    _write_growth_record(roles)
+    return filtered
+
+
+def get_spawn_inject(role_id, current_topic='', current_category=''):
+    """
+    Generate spawn prompt injection text for a role, based on:
+    1. Topic relevance (same category = higher priority)
+    2. Influence weight (recent high-scoring sessions)
+    3. Skip list (stance_history_skip_sessions)
+    4. Relationship network (if enabled)
+
+    Returns markdown-formatted string to inject into spawn prompt.
+    """
+    roles = _read_growth_record()
+    _, role = _find_role(roles, role_id)
+    if role is None:
+        return ''
+
+    sh = role.get('stance_history', [])
+    if not sh:
+        return ''
+
+    # Parse skip list
+    skip_raw = _get_config('stance_history_skip_sessions', '')
+    skip_ids = set(s.strip() for s in skip_raw.split(',') if s.strip())
+
+    # Filter out skipped sessions
+    eligible = [s for s in sh if s.get('session_id') not in skip_ids]
+    if not eligible:
+        return ''
+
+    # Calculate influence weight for each eligible entry
+    now = datetime.datetime.now()
+    for entry in eligible:
+        weight = 0.5  # base
+        # Score factor
+        score = entry.get('score')
+        if score:
+            weight += (score / 100) * 0.3
+        # Recency factor
+        sid = entry.get('session_id', '')
+        if sid:
+            try:
+                dt = datetime.datetime.strptime(sid[:8], '%Y%m%d')
+                days_ago = (now - dt).days
+                if days_ago <= 1:
+                    weight += 0.2
+                elif days_ago <= 7:
+                    weight += 0.1
+            except ValueError:
+                pass
+        entry['_weight'] = min(weight, 1.0)
+
+    # Sort by weight descending
+    eligible.sort(key=lambda e: e.get('_weight', 0), reverse=True)
+
+    # Determine how many to inject based on relationship_network_enabled
+    rel_enabled = is_relationship_enabled()
+
+    # Get top entry
+    top = eligible[0]
+    lines = []
+    lines.append('📜 你之前说过：')
+    lines.append('  - 上次（{}）："{}"'.format(top.get('topic', '?'), top.get('stance', '?')))
+    lines.append('这次议题是[{}]，你还坚持吗？'.format(current_topic or '当前议题'))
+
+    # Relationship context (if enabled)
+    if rel_enabled:
+        rel_lines = role.get('relationship_lines', [])
+        if rel_lines:
+            # Pick strongest relationship
+            strongest = max(rel_lines, key=lambda r: r.get('co_sessions', 0))
+            if strongest.get('co_sessions', 0) >= 2:
+                lines.append('')
+                lines.append('🔗 关系提醒：你和{}已经是{}了（同场{}次）'.format(
+                    strongest.get('target_id', '?'),
+                    strongest.get('status', '熟人'),
+                    strongest.get('co_sessions', 0),
+                ))
+
+    return '\n'.join(lines)
+
+
+def is_relationship_enabled():
+    """
+    Determine if relationship network should be active for current session.
+    Priority: never > session override > global config.
+    """
+    mode = _get_config('relationship_network_mode', 'auto')
+    if mode == 'never':
+        return False
+    if _session_relationship_override is not None:
+        return _session_relationship_override
+    enabled = _get_config('relationship_network_enabled', 'false')
+    return enabled.lower() == 'true'
+
+
+def backup_all(backup_dir=None):
+    """
+    Full backup of all roles' growth_record.
+    Saves to {growth_dir}/growth_backups/YYYYMMDD-HHMM.json
+    Keeps max 30 backups, auto-evicts oldest.
+
+    Returns backup filepath, or None on failure.
+    """
+    growth_dir = _get_growth_dir()
+    roles = _read_growth_record()
+
+    if backup_dir is None:
+        backup_dir = os.path.join(growth_dir, 'growth_backups')
+
+    os.makedirs(backup_dir, exist_ok=True)
+
+    timestamp = datetime.datetime.now()
+    filename = timestamp.strftime('%Y%m%d-%H%M.json')
+    filepath = os.path.join(backup_dir, filename)
+
+    data = {
+        'version': _get_current_schema_version(),
+        'backup_at': timestamp.isoformat(),
+        'roles': roles,
+    }
+
+    with codecs.open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    # Auto-evict: keep max 30 backups
+    _evict_old_backups(backup_dir, max_keep=30)
+
+    return filepath
+
+
+def restore_all(backup_file):
+    """
+    Restore all roles' growth_record from a backup file.
+    Before restoring, automatically creates a backup of current state (rescue backup).
+
+    Returns number of roles restored, or None on failure.
+    """
+    if not os.path.isfile(backup_file):
+        return None
+
+    # Rescue backup
+    backup_all()
+
+    with codecs.open(backup_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    roles = data.get('roles', [])
+    if isinstance(data, list):
+        roles = data
+
+    if not roles:
+        return 0
+
+    # Restore schema version
+    ver = data.get('version', 1)
+    _set_schema_version(ver)
+
+    _write_growth_record(roles)
+    return len(roles)
+
+
+def _evict_old_backups(backup_dir, max_keep=30):
+    """Remove oldest backups exceeding max_keep count."""
+    if not os.path.isdir(backup_dir):
+        return
+    files = sorted([
+        f for f in os.listdir(backup_dir)
+        if f.endswith('.json') and f.startswith('20')
+    ])
+    while len(files) > max_keep:
+        oldest = files.pop(0)
+        try:
+            os.remove(os.path.join(backup_dir, oldest))
+        except OSError:
+            pass
+
+
+# ─── Utility: stance history weight calculation ───
+
+def calc_influence_weight(stance_entry):
+    """
+    Calculate influence weight (0.0-1.0) for a single stance history entry.
+    Formula: score × recency × stance_shift_penalty
+    """
+    weight = 0.5  # base
+
+    # Score factor
+    score = stance_entry.get('score')
+    if score:
+        weight += (score / 100) * 0.3
+
+    # Stance shift penalty
+    stance = stance_entry.get('stance', '')
+    if '条件' in stance or '但' in stance:
+        weight *= 0.8
+
+    # Recency factor (by session_id date)
+    sid = stance_entry.get('session_id', '')
+    if sid:
+        try:
+            dt = datetime.datetime.strptime(sid[:8], '%Y%m%d')
+            days_ago = (datetime.datetime.now() - dt).days
+            if days_ago <= 3:
+                weight *= 1.0
+            elif days_ago <= 14:
+                weight *= 0.85
+            else:
+                weight *= 0.7
+        except ValueError:
+            pass
+
+    return round(min(weight, 1.0), 2)
+
+
+# ─── Auto-backup trigger ───
+
+_last_backup_time = None
+
+
+def auto_backup_if_needed():
+    """
+    Check if auto-backup is needed (≥24h since last backup).
+    Called by archive_discussion.py after each archive.
+    """
+    global _last_backup_time
+    now = datetime.datetime.now()
+    if _last_backup_time is None:
+        # Try to find latest existing backup
+        backup_dir = os.path.join(_get_growth_dir(), 'growth_backups')
+        if os.path.isdir(backup_dir):
+            existing = sorted([
+                f for f in os.listdir(backup_dir)
+                if f.endswith('.json') and f.startswith('20')
+            ])
+            if existing:
+                last_fname = existing[-1]
+                try:
+                    ts_str = last_fname.replace('.json', '')
+                    _last_backup_time = datetime.datetime.strptime(ts_str, '%Y%m%d-%H%M')
+                except ValueError:
+                    pass
+
+    if _last_backup_time is None or (now - _last_backup_time).total_seconds() >= 86400:
+        path = backup_all()
+        _last_backup_time = now
+        return path
+    return None
+
+
+# ─── Maintenance: migrate data schema ───
+
+def migrate_schema(target_version=None):
+    """
+    Migrate growth_record to target schema version.
+    Called by migrate_growth_data.py.
+
+    Returns (current_version, target_version, migrated_count).
+    """
+    fp = _get_growth_filepath()
+    if not os.path.isfile(fp):
+        return (_get_current_schema_version(), target_version, 0)
+
+    data = None
+    with codecs.open(fp, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    current_ver = data.get('version', 1) if isinstance(data, dict) else 1
+    if target_version is None:
+        target_version = current_ver
+
+    roles = data.get('roles', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+
+    migrated = 0
+    ver = current_ver
+
+    while ver < target_version:
+        ver += 1
+        for role in roles:
+            # version 1→2: ensure all fields exist
+            if ver == 2:
+                role.setdefault('career_events', [])
+                role.setdefault('achievements', [])
+                role.setdefault('auto_tags', [])
+                role.setdefault('manual_tags', [])
+                role.setdefault('version', 1)
+                role['version'] = 2
+                # Ensure stance_history entries have influence_weight
+                for s in role.get('stance_history', []):
+                    if 'influence_weight' not in s:
+                        s['influence_weight'] = calc_influence_weight(s)
+                migrated += 1
+            # version 2→3: future migration
+            # if ver == 3:
+            #     ...
+
+    _set_schema_version(ver)
+    _write_growth_record(roles)
+    return (current_ver, ver, migrated)
