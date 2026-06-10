@@ -639,6 +639,31 @@ def is_relationship_enabled():
     return enabled.lower() == 'true'
 
 
+def _is_guidance_needed():
+    """
+    Check if relationship network guidance hint should be shown.
+    Conditions: mode=auto, not enabled, and at least one role has relationships.
+
+    Returns True if guidance should be rendered.
+    """
+    mode = _get_config('relationship_network_mode', 'auto')
+    if mode != 'auto':
+        return False
+    if _session_relationship_override is not None:
+        return False
+    enabled = _get_config('relationship_network_enabled', 'false')
+    if enabled.lower() == 'true':
+        return False
+
+    # Check if any role has relationship data
+    roles = _read_growth_record()
+    for role in roles:
+        rel_lines = role.get('relationship_lines', [])
+        if len(rel_lines) >= 1:
+            return True
+    return False
+
+
 def backup_all(backup_dir=None):
     """
     Full backup of all roles' growth_record.
