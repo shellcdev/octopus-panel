@@ -90,6 +90,23 @@ def render_full_profile(role_id):
             lines.append('  第{}场 —— {}："{}"'.format(i + 1, period, stance))
         lines.append('')
 
+    # ─── Section 3.5: Career Events ───
+    career_events = growth_data.get('career_events', [])
+    if career_events:
+        # Reverse chronological order (newest first)
+        sorted_events = sorted(career_events, key=lambda e: e.get('occurred_at', ''), reverse=True)
+        # Limit to 5 most recent for display
+        recent_events = sorted_events[:5]
+
+        lines.append('🎉 生涯事件')
+        lines.append('')
+        for ev in recent_events:
+            desc = ev.get('description', '?')
+            aid = ev.get('event', '')
+            icon = '🎉' if 'MILESTONE' in aid or 'FIRST' in aid else '📌'
+            lines.append('  {} {}'.format(icon, desc))
+        lines.append('')
+
     # ─── Section 4: Relationship Network ───
     rel_lines = growth_data.get('relationship_lines', [])
     if rel_lines and growth_api.is_relationship_enabled():

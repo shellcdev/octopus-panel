@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 archive_discussion.py - discussion archive to knowledge base (enhanced v2.2)
-New: #34 Discussion Quality Scorecard - auto-calculate 5-dimension score and append to archive
+New: #34 Discussion Quality Scorecard - auto-calculate 5-dimension score
+New: Phase 0-5 - integrated with growth_api.py for role growth tracking + career events
 """
 
 import os
@@ -10,6 +11,13 @@ import json
 import argparse
 import datetime
 import re
+
+# Ensure scripts directory is in path for growth_api import
+_scripts_dir = os.path.dirname(os.path.abspath(__file__))
+if _scripts_dir not in sys.path:
+    sys.path.insert(0, _scripts_dir)
+
+import growth_api
 
 # --- Utility functions (original v2.1) ---
 
@@ -402,6 +410,57 @@ def main():
                 question_type, role_names, count))
         else:
             print('Diversity check passed')
+
+    # ─── Phase 0-5: Growth tracking + career events ───
+    session_id = timestamp.strftime('%Y%m%d') + '-' + topic_slug
+    if role_names:
+        for r in roles:
+            rname = r.get('name', 'Unknown')
+            rstance = r.get('stance', '')
+
+            # Update stance history
+            growth_api.update_stance_history(
+                role_id=rname,
+                session_id=session_id,
+                topic=q_topic[0] if q_topic else args.question[:20],
+                stance=rstance,
+                score=composite if not args.no_score else None,
+            )
+
+            # Update relationship lines with co-participants
+            for co in role_names:
+                if co != rname:
+                    growth_api.update_relationship(rname, co, 'neutral')
+
+            # Check achievements with career event context
+            session_ctx = {
+                'session_id': session_id,
+                'consensus_jump': 0,
+                'stance_shifted': False,
+                'session_score': composite if not args.no_score else None,
+                'mutual_rang': False,
+            }
+            new_achs = growth_api.check_achievements(rname, session_ctx)
+
+            # Check milestones (session count thresholds: 5/10/20/50)
+            milestones = growth_api._check_milestones(rname, session_id)
+
+            # Update auto tags
+            growth_api.update_auto_tags(rname)
+
+            if new_achs:
+                print('  [Growth] {} unlocked: {}'.format(rname, ', '.join(new_achs)))
+            if milestones:
+                for m in milestones:
+                    print('  [Milestone] {}: {}'.format(rname, m.get('description', '')))
+
+    # Auto-backup
+    backup_path = growth_api.auto_backup_if_needed()
+    if backup_path:
+        print('Growth auto-backup: ' + backup_path)
+
+    # Clear session override
+    growth_api.clear_session_override()
 
 if __name__ == '__main__':
     main()

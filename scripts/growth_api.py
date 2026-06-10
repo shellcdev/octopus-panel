@@ -370,6 +370,44 @@ def check_achievements(role_id, session_context=None):
                 'unlock_at': ctx.get('session_id', ''),
             })
 
+    # HIGHEST_SCORE: session score exceeds previous highest
+    if 'HIGHEST_SCORE' not in existing:
+        session_score = ctx.get('session_score')
+        if session_score:
+            prev_scores = [s.get('score', 0) or 0 for s in role.get('stance_history', [])[:-1]]
+            prev_highest = max(prev_scores) if prev_scores else 0
+            if session_score > prev_highest:
+                new_ones.append({
+                    'id': 'HIGHEST_SCORE',
+                    'name': '生涯最高分',
+                    'description': '单场评分达 {} 分，刷新个人纪录'.format(session_score),
+                    'unlock_at': ctx.get('session_id', ''),
+                })
+
+    # LOWEST_SCORE: session score below previous lowest
+    if 'LOWEST_SCORE' not in existing:
+        session_score = ctx.get('session_score')
+        if session_score:
+            prev_scores = [s.get('score', 0) or 0 for s in role.get('stance_history', [])[:-1]]
+            prev_lowest = min(prev_scores) if prev_scores else 100
+            if session_score < prev_lowest:
+                new_ones.append({
+                    'id': 'LOWEST_SCORE',
+                    'name': '生涯最低分',
+                    'description': '单场评分仅 {} 分，低于预期'.format(session_score),
+                    'unlock_at': ctx.get('session_id', ''),
+                })
+
+    # FIRST_CONSENSUS: first simultaneous [让] with another role
+    if 'FIRST_CONSENSUS' not in existing:
+        if ctx.get('mutual_rang'):
+            new_ones.append({
+                'id': 'FIRST_CONSENSUS',
+                'name': '首次默契',
+                'description': '首次与另一角色同时[让]，达成共识',
+                'unlock_at': ctx.get('session_id', ''),
+            })
+
     if new_ones:
         role['achievements'] = role.get('achievements', []) + new_ones
         role['career_events'] = role.get('career_events', []) + [
@@ -383,6 +421,44 @@ def check_achievements(role_id, session_context=None):
         _write_growth_record(roles)
 
     return [a['id'] for a in new_ones]
+
+
+def _check_milestones(role_id, session_id=''):
+    """
+    Check for career milestone events (session count milestones).
+    Called separately from check_achievements, after stance history update.
+
+    Returns list of new milestone event dicts.
+    """
+    roles = _read_growth_record()
+    _, role = _find_role(roles, role_id)
+    if role is None:
+        return []
+
+    total = role.get('total_sessions', 0)
+    existing_events = {e['event'] for e in role.get('career_events', [])}
+    milestones = []
+
+    milestones_config = [
+        (5, 'FIVE_SESSION_MILESTONE', '初出茅庐', '累计参与 5 场讨论'),
+        (10, 'TEN_SESSION_MILESTONE', '讨论老手', '累计参与 10 场讨论'),
+        (20, 'TWENTY_SESSION_MILESTONE', '资深辩手', '累计参与 20 场讨论'),
+        (50, 'FIFTY_SESSION_MILESTONE', '八爪元老', '累计参与 50 场讨论'),
+    ]
+
+    for threshold, event_id, title, desc in milestones_config:
+        if event_id not in existing_events and total >= threshold:
+            milestones.append({
+                'event': event_id,
+                'description': '里程碑：{}——{}'.format(title, desc),
+                'occurred_at': session_id,
+            })
+
+    if milestones:
+        role['career_events'] = role.get('career_events', []) + milestones
+        _write_growth_record(roles)
+
+    return milestones
 
 
 def update_auto_tags(role_id):
