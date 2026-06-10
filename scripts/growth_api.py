@@ -442,7 +442,7 @@ def update_auto_tags(role_id):
     return filtered
 
 
-def get_spawn_inject(role_id, current_topic='', current_category=''):
+def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1):
     """
     Generate spawn prompt injection text for a role, based on:
     1. Topic relevance (same category = higher priority)
@@ -451,7 +451,12 @@ def get_spawn_inject(role_id, current_topic='', current_category=''):
     4. Relationship network (if enabled)
 
     Returns markdown-formatted string to inject into spawn prompt.
+    Use round_n=1 for first round injection, round_n>=2 will return empty
+    to avoid repeating content already seen in discussion.
     """
+    if round_n >= 2:
+        return ''  # Skip injection for round 2+ (already in discussion context)
+
     roles = _read_growth_record()
     _, role = _find_role(roles, role_id)
     if role is None:
@@ -519,6 +524,52 @@ def get_spawn_inject(role_id, current_topic='', current_category=''):
                     strongest.get('co_sessions', 0),
                 ))
 
+    return '\n'.join(lines)
+
+
+def get_compact_history(role_id):
+    """
+    Get compact one-line stance history for role card display.
+    Format: 📜 履历: 议题(立场) → 议题(立场) → 本次？
+
+    Returns markdown string, or empty string if no history.
+    """
+    roles = _read_growth_record()
+    _, role = _find_role(roles, role_id)
+    if role is None:
+        return ''
+
+    sh = role.get('stance_history', [])
+    if not sh:
+        return ''
+
+    # Take most recent 3 entries for compact display
+    recent = sh[-3:]
+    parts = []
+    for entry in recent:
+        topic = entry.get('topic', '?')[:6]
+        stance = entry.get('stance', '?')[:8]
+        parts.append('{}({})'.format(topic, stance))
+
+    parts.append('本次？')
+    return '📜 履历: ' + ' → '.join(parts)
+
+
+def get_compact_display(role_id):
+    """
+    Full compact display block for role card bottom.
+    Includes compact history + expand icon if history exists.
+
+    Returns markdown string, or empty string if no history.
+    """
+    compact = get_compact_history(role_id)
+    if not compact:
+        return ''
+
+    lines = []
+    lines.append('')
+    lines.append('**立场履历**：')
+    lines.append(compact + '  📈')
     return '\n'.join(lines)
 
 
