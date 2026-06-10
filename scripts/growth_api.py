@@ -477,13 +477,16 @@ def _classify_topic(topic):
     return 'general'
 
 
-def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1):
+def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1, mode='light'):
     """
     Generate spawn prompt injection text for a role, based on:
     1. Topic relevance (same category = higher priority)
     2. Influence weight (recent high-scoring sessions)
     3. Skip list (stance_history_skip_sessions)
     4. Relationship network (if enabled)
+
+    mode='light': inject 1 top entry (for first-round quick context)
+    mode='deep':  inject top 3 entries + relationship context (for full depth)
 
     Returns markdown-formatted string to inject into spawn prompt.
     Use round_n=1 for first round injection, round_n>=2 will return empty
@@ -510,9 +513,10 @@ def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1):
     if not eligible:
         return ''
 
+    # Count how many were skipped for display
+    skipped_count = sum(1 for s in sh if s.get('session_id') in skip_ids)
+
     # Calculate influence weight + topic relevance for each eligible entry
-    # Category similarity matrix:
-    #   same category = 1.0, adjacent = 0.7, unrelated = 0.3
     category_matrix = {
         'career': {'career': 1.0, 'financial': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
         'financial': {'financial': 1.0, 'career': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
@@ -524,18 +528,12 @@ def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1):
     now = datetime.datetime.now()
     for entry in eligible:
         weight = 0.3  # base
-
-        # Topic relevance factor (highest priority)
         entry_cat = _classify_topic(entry.get('topic', ''))
         rel_score = category_matrix.get(current_category, {}).get(entry_cat, 0.3)
         weight += rel_score * 0.35
-
-        # Score factor
         score = entry.get('score')
         if score:
             weight += (score / 100) * 0.2
-
-        # Recency factor
         sid = entry.get('session_id', '')
         if sid:
             try:
@@ -549,24 +547,45 @@ def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1):
                 pass
         entry['_weight'] = min(weight, 1.0)
 
-    # Sort by weight descending
     eligible.sort(key=lambda e: e.get('_weight', 0), reverse=True)
-
-    # Determine how many to inject based on relationship_network_enabled
     rel_enabled = is_relationship_enabled()
 
-    # Get top entry
-    top = eligible[0]
     lines = []
     lines.append('📜 你之前说过：')
-    lines.append('  - 上次（{}）："{}"'.format(top.get('topic', '?'), top.get('stance', '?')))
-    lines.append('这次议题是[{}]，你还坚持吗？'.format(current_topic or '当前议题'))
+
+    if mode == 'deep' and len(eligible) >= 2:
+        # Deep inject: top 3 entries
+        top_n = min(3, len(eligible))
+        for i in range(top_n):
+            e = eligible[i]
+            w = e.get('_weight', 0)
+            star = ' ⭐' if w >= 0.7 else ''
+            lines.append('  - {}（{}）："{}"{}'.format(
+                '上次' if i == 0 else '第{}次'.format(i + 1),
+                e.get('topic', '?'), e.get('stance', '?'), star))
+        if skipped_count > 0:
+            lines.append('  （已跳过 {} 场历史，不注入）'.format(skipped_count))
+        lines.append('')
+        lines.append('这次议题是[{}]，你还坚持吗？'.format(current_topic or '当前议题'))
+        # Check if previous stances were contradictory
+        stances = [e.get('stance', '') for e in eligible[:top_n]]
+        unique_stances = len(set(stances))
+        if unique_stances <= 1:
+            lines.append('注：你之前每次立场都很一致——这次会改变吗？')
+        else:
+            lines.append('注：你之前立场有变化——这次会延续还是转向？')
+    else:
+        # Light inject: 1 top entry (original behavior)
+        top = eligible[0]
+        lines.append('  - 上次（{}）："{}"'.format(top.get('topic', '?'), top.get('stance', '?')))
+        if skipped_count > 0:
+            lines.append('  （已跳过 {} 场历史）'.format(skipped_count))
+        lines.append('这次议题是[{}]，你还坚持吗？'.format(current_topic or '当前议题'))
 
     # Relationship context (if enabled)
     if rel_enabled:
         rel_lines = role.get('relationship_lines', [])
         if rel_lines:
-            # Pick strongest relationship
             strongest = max(rel_lines, key=lambda r: r.get('co_sessions', 0))
             if strongest.get('co_sessions', 0) >= 2:
                 lines.append('')
