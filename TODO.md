@@ -1,95 +1,92 @@
-# 八爪议事厅 · TODO（v2.18 → 进化路线）
+# 八爪议事厅 · TODO（v2.18 + 角色成长系统 Phase 0-5）
 
-> 最后核验：2026-06-09 | 核验方式：源目录 v2.18 代码 + 角色成长系统-spec v1.4
-> 基线版本：**v2.18**（🎩 六帽滤镜 / 📊 评分卡 / 🔥 8 种模式 / 🧩 37 角色 / 📚 20 案例 — 全部已落地并四轮实测验证，详见 `CHANGELOG.md`）
+> 最后核验：2026-06-10 | 核验方式：源目录 v2.18 代码 + 角色成长系统 Phase 0-5 全部编码落地（8 commits, 6 phases）
+> 基线版本：**v2.18 + 角色成长系统 v1.0**（🎩 六帽滤镜 / 📊 评分卡 / 🔥 8 种模式 / 🧩 37 角色 / 📚 20 案例 / 🌱 角色成长 — 全部已落地，详见 `CHANGELOG.md`）
 > 
-> 本文档聚焦**待编码落地的规格**和**长期方向**。已完成明细见 CHANGELOG。
+> 本文档聚焦**剩余的待办项**和**长期演进方向**。
 
 ---
 
-## 🔄 已升级为规格（待编码落地）
+## ✅ Phase 0-5 · 角色成长系统（全部编码落地）
 
-以下项已在 `角色成长系统-spec_20260609.md`（v1.4）中完成完整规格设计，未进入编码阶段。
+角色成长系统完整规格 → 编码完成，提交历史见下：
 
-### Phase 0 · 数据模型 + API 解耦 + 系统工程（~3.5h）
+```
+33424f0  Phase 5: 角色生涯事件 + 角色集市导出
+64921bb  Phase 4: spawn 深度注入 + 选择性遗忘
+a6256f4  Phase 3: 完整档渲染器 growth_renderer.py
+b36e9af  Phase 2: auto_tags 规则库 + 议题相关度排序
+c6f320f  Phase 1: 立场履历轻量档 MVP
+f4310fc  Phase 0: 角色成长系统 API + 数据迁移 + 备份
+```
 
-| 优先级 | 项 | 前置 |
-|--------|----|------|
-| **P1** | `growth_api.py` 新建（7 个接口函数） | — |
-| **P1** | `archive_discussion.py` 改为依赖 growth_api | — |
-| **P1** | `scripts/migrate_growth_data.py`（数据迁移 + version 字段） | — |
-| **P1** | `scripts/backup_growth_data.py`（30 份自动循环备份 + restore） | — |
-| **P1** | config.md 新增配置项（stance_history/relationship_network 系列） | — |
-| **P1** | 关系线采集逻辑（auto/always/never 三模式 + never 跳过采集） | — |
+### Phase 0 · 数据模型 + API 解耦 + 系统工程
+| 项 | 状态 | 文件 |
+|----|------|------|
+| `growth_api.py` 新建（7 个接口函数） | ✅ | `scripts/growth_api.py` |
+| `archive_discussion.py` 集成 growth_api | ✅ | `scripts/archive_discussion.py` |
+| `scripts/migrate_growth_data.py` | ✅ | `scripts/migrate_growth_data.py` |
+| `scripts/backup_growth_data.py` | ✅ | `scripts/backup_growth_data.py` |
+| config.md 配置项（stance_history/relationship_network 系列） | ✅ | `config.md` |
+| 关系线采集（auto/always/never 三模式） | ✅ | `growth_api.py` |
 
-### Phase 1 · 立场履历轻量档 🚀 MVP（~1.5h）
+### Phase 1 · 立场履历轻量档 🚀 MVP
+| 项 | 状态 | 文件 |
+|----|------|------|
+| `get_spawn_inject()` 权重排序+round跳过 | ✅ | `growth_api.py` |
+| 紧凑图标式履历 `议题(立场)` | ✅ | `growth_api.get_compact_history()` |
+| 📈 快速展开入口（行内迷你成长卡片） | 🔲 P2 未实现 | — |
 
-| 优先级 | 项 | 前置 |
-|--------|----|------|
-| **P1** | `get_spawn_inject()` 按权重最高的 1 条立场注入 | Phase 0 |
-| **P1** | 紧凑图标式履历渲染 `议题(立场)` | Phase 0 |
-| **P2** | 📈 快速展开入口（行内迷你成长卡片） | Phase 1 基础 |
+### Phase 2 · auto_tags + 议题相关度
+| 项 | 状态 | 文件 |
+|----|------|------|
+| `update_auto_tags()` 自动打标签（8 规则） | ✅ | `growth_api.py` |
+| `references/auto-tag-rules.md` 规则库 | ✅ | `references/auto-tag-rules.md` |
+| `get_spawn_inject()` 议题相关度排序 | ✅ | `growth_api.py` |
 
-### Phase 2 · auto_tags + 议题相关度（~2.5h）
+### Phase 3 · 完整档渲染器 + 关系网络
+| 项 | 状态 | 文件 |
+|----|------|------|
+| 成长树 + 心路总结自动生成 | ✅ | `growth_renderer.py` |
+| 关系网络文字展示 | ✅ | `growth_renderer.py` |
+| 临时开关"这轮不要关系" | ✅ | `growth_api.set_session_override()` |
+| 数据统计模块 | ✅ | `growth_renderer._compute_stats()` |
+| 标签墙（自动+手动+置信度） | ✅ | `growth_renderer.py` |
+| 条件触发引导 | ✅ | `growth_renderer.render_guidance()` |
+| spawn inject 关系信息注入 | ✅ | `growth_api.get_spawn_inject()` |
 
-| 优先级 | 项 | 前置 |
-|--------|----|------|
-| **P1** | `growth_api.update_auto_tags()` 自动打标签 | Phase 0 |
-| **P1** | 新建 `references/auto-tag-rules.md`（8 个标签规则库 + 置信度计算） | Phase 0 |
-| **P2** | `get_spawn_inject()` 按议题相关度排序选注入 | Phase 1 |
+### Phase 4 · spawn 深度注入 + 选择性遗忘
+| 项 | 状态 | 文件 |
+|----|------|------|
+| `get_spawn_inject()` deep mode（top 3 + 一致性检测） | ✅ | `growth_api.py` |
+| `stance_history_skip_sessions` 跳过列表 | ✅ | `growth_api.py` + `config.md` |
 
-### Phase 3 · 完整档渲染器 + 关系网络（~3h）
-
-| 优先级 | 项 | 前置 |
-|--------|----|------|
-| **P2** | 成长树 + 心路总结自动生成 | Phase 0-2 |
-| **P2** | 关系网络展示（文字版 → 未来力导向图） | Phase 0（关系采集）|
-| **P2** | 临时开关"这轮不要关系"（会话级覆盖，讨论结束清空） | Phase 0 |
-| **P2** | 数据统计模块（最爱议题/最常对抗/平均发言/让次数） | Phase 0-2 |
-| **P2** | 标签墙（自动+手动标签，含置信度百分比） | Phase 2 |
-| **P1** | 条件触发引导（有数据才提示，不提前画饼） | Phase 3 基础 |
-| **P1** | spawn inject 关系信息注入 + 对抗位强度关联 | Phase 3 基础 |
-
-### Phase 4 · spawn 深度注入 + 选择性遗忘（~1.5h）
-
-| 优先级 | 项 | 前置 |
-|--------|----|------|
-| **P2** | `get_spawn_inject()` 支持 `stance_history_skip_sessions` | Phase 1 |
-
-### Phase 5 · 角色生涯事件 + 角色集市（~2h）
-
-| 优先级 | 项 | 前置 |
-|--------|----|------|
-| **P2** | `career_events` 自动检测（首次立场变化/最高分/里程碑等） | Phase 3 |
-| **P2** | 心路总结自动生成（依赖成长树已有数据） | Phase 3 |
-| **P3** | `scripts/export_role.py` 角色集市导入导出 | Phase 5 |
+### Phase 5 · 角色生涯事件 + 角色集市
+| 项 | 状态 | 文件 |
+|----|------|------|
+| `career_events` 自动检测（最高分/最低分/首次立场变化/里程碑） | ✅ | `growth_api.py` |
+| 生涯事件模块渲染 | ✅ | `growth_renderer.py` |
+| `scripts/export_role.py` 角色集市导出 | ✅ | `scripts/export_role.py` |
+| 角色集市导入 | ✅ | `export_role.import_role()` |
 
 ---
 
-## 📋 优先级总览
+## 📋 优先级总览（剩余待办）
 
-| 优先级 | Phase | 内容 | 工作量 | 前置 |
-|--------|-------|------|--------|------|
-| **P1** | **Phase 0** | 数据模型 + API 解耦 + 关系采集 + 配置 | **3.5h** | — |
-| **P1** | **Phase 1** | 立场履历轻量档 + spawn inject MVP | **1.5h** | Phase 0 |
-| **P1** | Phase 2 | auto_tags + 议题相关度排序 | **2.5h** | Phase 0 |
-| **P2** | Phase 3 | 完整档渲染器 + 关系网络 + 数据统计 | **3h** | Phase 0-2 |
-| **P2** | Phase 4 | spawn 深度注入 + 选择性遗忘 | **1.5h** | Phase 1-2 |
-| **P2** | Phase 5 | 角色生涯事件 + 角色集市 | **2h** | Phase 3 |
-| | | **总计** | **约 14h** | |
-
-```
-开工顺序：Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5
-             ↑必须先做    ↑MVP可交付    ↑完整档   ↑深度优化   ↑锦上添花
-```
+| 优先级 | 内容 | 工作量 | 说明 |
+|--------|------|--------|------|
+| **P2** | 📈 快速展开入口（行内迷你成长卡片） | ~1h | Phase 1 遗留，需要前端可点击展开 |
+| **P2** | 🔗 力导向关系网络图 | ~3h | 当前为文字版，升级为前端可视化 |
 
 ### #28 · 角色关系网络
-> 状态：✅ 规格已完成（角色成长系统-spec v1.4），融合为 Phase 0 + Phase 3
+> 状态：✅ **已编码落地** — 融合为 Phase 0 + Phase 3
+> 提交：`f4310fc` / `a6256f4`
 
 数据采集（Phase 0），展示渲染 + 临时开关 + spawn inject（Phase 3）。
 
 ### #33 · 跨讨论角色记忆
-> 状态：✅ 规格已完成（角色成长系统-spec v1.4），融合为 Phase 1-5
+> 状态：✅ **已编码落地** — 融合为 Phase 1-5
+> 提交：`c6f320f` / `b36e9af` / `a6256f4` / `64921bb` / `33424f0`
 
 立场履历（Phase 1）、议题相关度（Phase 2）、完整展示（Phase 3）、选择性遗忘（Phase 4）、生涯事件（Phase 5）。
 
@@ -122,36 +119,38 @@
 | #25 | 降优先级 | 案例数 <10，手动可查 |
 | #A-#G | ✅ **v2.18 已全部落地** | 四轮测试全量验证通过 |
 | #40-#48 | ✅ **v2.18 已全部落地** | 帽子优化 7 项全通过 |
-| #28、#33 | ✅ **已升级为规格** | 分别融合为 Phase 0+3 和 Phase 1-5 |
-| 角色成长系统 | ✅ **规格 v1.4 已完成** | 待 Phase 0→5 编码落地 |
+| #28、#33 | ✅ **已编码落地** | 分别融合为 Phase 0+3 和 Phase 1-5 |
+| 角色成长系统 | ✅ **Phase 0-5 全部编码完成** | 6 commits, 10 files, ~2000 行代码 |
 
 ---
 
 ## 🗺️ 进化全景图
 
 ```
-当前（源目录 v2.18）
+当前（源目录 v2.18 + 角色成长系统 Phase 0-5）
   ├── 🎩 六帽滤镜 ✅
   ├── 📊 评分卡 ✅
   ├── 🔥 8 种讨论模式 ✅
   ├── 🧩 37 个角色模板 ✅
-  └── 📚 20 个讨论案例 ✅
+  ├── 📚 20 个讨论案例 ✅
+  ├── 🏗️ Phase 0: 数据模型 + API + 备份 ✅
+  ├── 🚀 Phase 1: 立场履历轻量档 MVP ✅
+  ├── 🏷️ Phase 2: auto_tags + 议题相关度 ✅
+  ├── 🌳 Phase 3: 完整档渲染器（成长树+关系+统计）✅
+  ├── 🧠 Phase 4: 深度注入 + 选择性遗忘 ✅
+  └── 🎉 Phase 5: 生涯事件 + 角色集市 ✅
 
-下一阶段（角色成长系统 Phase 0-5，~14h）
-  ├── Phase 0 🏗️ 数据模型 + API + 备份 + 关系采集
-  ├── Phase 1 🚀 立场履历轻量档（MVP）
-  ├── Phase 2 🏷️ auto_tags + 议题相关度
-  ├── Phase 3 🌳 完整档渲染器（成长树+关系网络+统计）
-  ├── Phase 4 🧠 spawn 深度注入 + 选择性遗忘
-  └── Phase 5 🎉 角色生涯事件 + 角色集市
+剩余待办
+  ├── 📈 快速展开入口（行内迷你成长卡片）P2
+  └── 🔗 力导向关系网络图 P2
 
 长期演进
-  ├── 🏪 角色集市（高等级角色共享）
-  ├── 🎮 游戏化成长（经验值/成就/等级）
+  ├── 🏪 角色集市生态（高等级角色共享）
+  ├── 🎮 游戏化成长（经验值/成就/等级系统）
   └── ✏️ 角色自定义（改名/调立场/加软肋）
 ```
 
 ---
 
-*整理于：2026-06-09*
-*参考：源目录 v2.18 / 角色成长系统-spec v1.4 / 四轮测试报告 / 改进待办*
+*整理于：2026-06-10*
+*参考：源目录 v2.18 / 角色成长系统 Phase 0-5 代码 / git log*
