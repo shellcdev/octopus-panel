@@ -244,6 +244,17 @@ def update_stance_history(role_id, session_id, topic, stance, score):
         stance_history = stance_history[-max_entries:]
 
     role['stance_history'] = stance_history
+
+    # ─── EXP calculation & level update ───
+    if score is not None:
+        # Decay coefficient: max(0.6, 1.0 - (total_sessions - 1) × 0.02)
+        decay = max(0.6, 1.0 - (role['total_sessions'] - 1) * 0.02)
+        # EXP gained = score × decay (character contribution estimated from score itself)
+        exp_gained = int(score * decay)
+        role['exp'] = role.get('exp', 0) + exp_gained
+        # Level: floor(exp / 200) + 1
+        role['level'] = role['exp'] // 200 + 1
+
     _write_growth_record(roles)
     return role
 

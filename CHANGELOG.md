@@ -1,5 +1,144 @@
 # 版本变更日志
 
+## v3.0 · 角色成长系统（2026-06-10）
+
+> 编码落地：角色成长系统 Phase 0-5 全量完成（6 commits, ~2000行代码）
+> 对应规格：`角色成长系统-spec_20260609.md` → 代码落地
+> 基线：v2.18 + 角色成长系统 v1.0
+
+### Phase 0 · 数据模型 + API 解耦 + 系统工程（`f4310fc`）
+
+**新增文件**：
+- `scripts/growth_api.py` — 7 个核心接口 + 会话级临时开关 + 自动备份
+
+**变更文件**：
+- `scripts/archive_discussion.py` — 集成 growth_api，归档时自动更新立场/关系/成就/标签；文件命名 `YYYYMMDD-{topic}.md`
+- `config.md` — 新增 `stance_history_max_entries`、`stance_history_skip_sessions`、`relationship_network_enabled`、`relationship_network_mode`
+
+**新增脚本**：
+- `scripts/migrate_growth_data.py` — `--target --dry-run` 数据迁移（v1→v2 含 career_events/权重字段）
+- `scripts/backup_growth_data.py` — `--backup --restore --list` 30份循环备份
+
+**核心能力**：
+- 7 接口：get_role_growth / update_stance_history / update_relationship / check_achievements / update_auto_tags / get_spawn_inject / backup_all+restore_all
+- 关系线采集：auto/always/never 三模式 + never 跳过采集
+- 自动备份：24h 自动触发 + 抢救式 restore
+
+---
+
+### Phase 1 · 立场履历轻量档 MVP（`c6f320f`）
+
+**变更文件**：
+- `references/templates.md` — 角色卡格式新增 `[立场履历]` 字段 + 紧凑图标式履历示例；spawn prompt 新增 `📜 立场履历注入` 节（仅 round=1）
+- `SKILL.md` — 硬性规则第 9 条：立场履历注入
+- `scripts/growth_api.py` — `get_spawn_inject()` 支持 `round_n` 参数（round≥2跳过）；新增 `get_compact_history()` / `get_compact_display()`
+
+**核心能力**：
+- 角色卡底部显示 `📜 履历: 咖啡馆(梭了开) → 跳槽(跳！梭了) → 本次？`
+- spawn prompt 首次注入历史立场，后续轮次跳过
+- 📈 快速展开入口预留（待前端配合）
+
+---
+
+### Phase 2 · auto_tags + 议题相关度（`b36e9af`）
+
+**新增文件**：
+- `references/auto-tag-rules.md` — 8 标签规则库（触发条件/置信度公式/数据来源/阈值/生命周期）
+
+**变更文件**：
+- `scripts/growth_api.py` — `update_auto_tags()` 新增 3 标签（让步大师/立场漂移/绿帽思路推动）；`_classify_topic()` 分类函数；`get_spawn_inject()` 议题相关度排序（分类相似度矩阵）
+
+**标签库**：
+
+| 标签 | 置信度 | 触发条件 |
+|------|--------|---------|
+| 怼王候选 | 高分场次占比 | ≥3场高分 |
+| 让步大师 | 累计[让]×15 | ≥2次 |
+| 绿帽骑士 | 50+场次×15 | ≥1场绿帽 |
+| 立场稳定 | 100-种类×35 | ≤2种立场 |
+| 立场漂移 | 变化次数×40 | 场内变化 |
+| 共识催化剂 | 固定85% | 成就派生 |
+| 沉默搭档 | 低分场次占比 | ≥2场低分 |
+| 绿帽思路推动 | 引用次数×20 | ≥2次引用 |
+
+---
+
+### Phase 3 · 完整档渲染器 + 关系网络（`a6256f4`）
+
+**新增文件**：
+- `scripts/growth_renderer.py` — 6 模块完整角色成长卡渲染器
+
+**变更文件**：
+- `scripts/growth_api.py` — 新增 `_is_guidance_needed()` 条件触发引导函数
+
+**核心能力**：
+
+```
+📊 角色成长卡 — 赌徒
+等级：Lv.2  |  场次：5场  |  经验：337
+
+🏆 成就墙
+  ✅ 改变过风向 — 发言后共识拐点≥20%
+
+🎉 生涯事件
+  🎉 里程碑：初出茅庐——累计参与5场讨论
+
+🌿 成长树 — 从"梭了"到"条件梭了"，学会了加条件
+  第1场 —— 初登场期："梭了"
+  ...
+
+📊 数据统计
+  最爱讨论：职场决策(3场) / 财务投资(1场)
+  平均讨论评分：75/100
+  [让] 次数：2次
+
+🏷️ 标签
+  🔖 共识催化剂(85%) [自动]
+```
+
+---
+
+### Phase 4 · spawn 深度注入 + 选择性遗忘（`64921bb`）
+
+**变更文件**：
+- `scripts/growth_api.py` — `get_spawn_inject()` 新增 `mode='light'|'deep'` 参数；跳过场次计数标注；立场一致性检测
+- `references/templates.md` — spawn prompt 模板更新，light/deep 双模式说明
+
+**核心能力**：
+- light 模式（默认）：注入 top 1 条
+- deep 模式（用户说"深度回忆"）：注入 top 3 条 + ⭐权重标记 + 立场一致性检测
+- 选择性遗忘：`config.md` 配置 `stance_history_skip_sessions` 跳过特定场次
+
+---
+
+### Phase 5 · 角色生涯事件 + 角色集市（`33424f0`）
+
+**新增文件**：
+- `scripts/export_role.py` — 角色集市导出/导入（脱敏处理，导入重置为 Lv.1）
+
+**变更文件**：
+- `scripts/growth_api.py` — `check_achievements()` 新增 4 事件（HIGHEST_SCORE / LOWEST_SCORE / FIRST_CONSENSUS）；`_check_milestones()` 里程碑检测（5/10/20/50 场）
+- `scripts/growth_renderer.py` — 新增生涯事件渲染模块（🎉里程碑/📌普通，按时间倒序）
+- `scripts/archive_discussion.py` — 集成 milestone + career event 检测
+
+**生涯事件**：
+
+| 事件 | 触发条件 | 图标 |
+|------|---------|------|
+| 首次立场变化 | 场内首次[让] | 🎉 |
+| 生涯最高分 | 单场评分刷新纪录 | 🎉 |
+| 生涯最低分 | 单场评分创新低 | 📌 |
+| 首次默契 | 与另一角色同时[让] | 🎉 |
+| 里程碑5场 | 累计≥5场 | 🎉 |
+| 里程碑10场 | 累计≥10场 | 🎉 |
+
+### 系统增强
+- `.gitignore` — `__pycache__/` + `*.pyc` 全局排除
+- EXP 计算：`update_stance_history()` 自动计算经验值（`score × 衰减系数`），自动更新等级（`floor(exp/200)+1`）
+- TODO.md — 整编为最新待办状态，含已知格式问题和废弃说明
+
+---
+
 ## v2.18（2026-06-09，已完成）
 
 > 来源：四轮实测复盘（咖啡馆/跳槽/涨薪/查手机），基于 v2.17 的6项优化做全量验证 + 改进待办落地 + 本轮对话设计成果（角色成长系统-spec v1.4）
