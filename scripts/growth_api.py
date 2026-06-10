@@ -427,7 +427,24 @@ def update_auto_tags(role_id):
     if any(a['id'] == 'CHANGED_THE_WIND' for a in achievements):
         tags.append({'tag': '共识催化剂', 'confidence': 85})
 
-    # LV_MAO_KNIGHT: participated in green hat rounds
+    # GREEN_IDEA_DRIVER: [绿] references across sessions
+    green_ref_count = sum(1 for s in sh if '🟢' in s.get('topic', '') or '绿' in s.get('stance', ''))
+    if green_ref_count >= 2:
+        confidence = min(100, green_ref_count * 20)
+        tags.append({'tag': '绿帽思路推动', 'confidence': confidence})
+
+    # STANCE_SHIFT: in-session stance changes (from career_events)
+    ce = role.get('career_events', [])
+    shift_count = sum(1 for e in ce if e.get('event') == 'FIRST_STANCE_SHIFT')
+    if shift_count >= 1:
+        confidence = min(100, shift_count * 40)
+        tags.append({'tag': '立场漂移', 'confidence': confidence})
+
+    # RANG_MASTER: [让] count (estimated from stance text containing '条件'/'但')
+    rang_count = sum(1 for s in sh if '条件' in s.get('stance', '') or '但' in s.get('stance', ''))
+    if rang_count >= 2:
+        confidence = min(100, rang_count * 15)
+        tags.append({'tag': '让步大师', 'confidence': confidence})
     lv_count = sum(1 for s in sh if '🟢' in s.get('topic', '') or '绿' in s.get('stance', ''))
     if lv_count >= 1:
         confidence = min(100, 50 + lv_count * 15)
@@ -440,6 +457,24 @@ def update_auto_tags(role_id):
     role['auto_tags'] = ['{}({}%)'.format(t['tag'], t['confidence']) for t in filtered]
     _write_growth_record(roles)
     return filtered
+
+
+# ─── Topic classification (shared with archive_discussion.py) ───
+
+def _classify_topic(topic):
+    """Classify a topic string into a category for relevance matching."""
+    if not topic:
+        return 'general'
+    t = topic.lower()
+    if any(w in t for w in ['买房', '租房', '投资', '理财', '股票', '基金', '房价']):
+        return 'financial'
+    if any(w in t for w in ['辞职', '创业', '工作', '跳槽', '加薪', '面试', '升职', '转行']):
+        return 'career'
+    if any(w in t for w in ['结婚', '离婚', '出轨', '育儿', '孩子', '父母', '家庭', '生子', '感情']):
+        return 'family'
+    if any(w in t for w in ['技术', '架构', '选型', '框架', '代码', '开发', '部署', '上线']):
+        return 'technical'
+    return 'general'
 
 
 def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1):
@@ -475,14 +510,31 @@ def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1):
     if not eligible:
         return ''
 
-    # Calculate influence weight for each eligible entry
+    # Calculate influence weight + topic relevance for each eligible entry
+    # Category similarity matrix:
+    #   same category = 1.0, adjacent = 0.7, unrelated = 0.3
+    category_matrix = {
+        'career': {'career': 1.0, 'financial': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
+        'financial': {'financial': 1.0, 'career': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
+        'family': {'family': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'technical': 0.1},
+        'technical': {'technical': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'family': 0.1},
+        'general': {'general': 0.5, 'career': 0.5, 'financial': 0.5, 'family': 0.5, 'technical': 0.5},
+    }
+
     now = datetime.datetime.now()
     for entry in eligible:
-        weight = 0.5  # base
+        weight = 0.3  # base
+
+        # Topic relevance factor (highest priority)
+        entry_cat = _classify_topic(entry.get('topic', ''))
+        rel_score = category_matrix.get(current_category, {}).get(entry_cat, 0.3)
+        weight += rel_score * 0.35
+
         # Score factor
         score = entry.get('score')
         if score:
-            weight += (score / 100) * 0.3
+            weight += (score / 100) * 0.2
+
         # Recency factor
         sid = entry.get('session_id', '')
         if sid:
@@ -490,9 +542,9 @@ def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1):
                 dt = datetime.datetime.strptime(sid[:8], '%Y%m%d')
                 days_ago = (now - dt).days
                 if days_ago <= 1:
-                    weight += 0.2
+                    weight += 0.15
                 elif days_ago <= 7:
-                    weight += 0.1
+                    weight += 0.08
             except ValueError:
                 pass
         entry['_weight'] = min(weight, 1.0)
