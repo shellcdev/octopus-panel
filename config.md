@@ -34,8 +34,8 @@
 
 | 键 | 默认值 | 说明 |
 |---|---|---|
+| relationship_network_mode | auto | 关系网三模式：`auto`（先攒再看）/ `always`（永久展示）/ `never`（关就是关）。|
 | relationship_network_enabled | false | 在 auto 模式下，设为 true 后激活关系网络展示和注入 |
-| relationship_network_mode | auto | 关系网三模式：`auto`（先攒再看）/ `always`（永久展示）/ `never`（关就是关）。详见下方 |
 | stance_history_max_entries | 10 | 立场履历最大保留条数（超出后删旧留新） |
 | stance_history_skip_sessions | (空) | 选择性遗忘：逗号分隔的 session_id，spawn 注入时跳过 |
 | backup_keep_count | 30 | 成长数据自动备份保留份数（超出后删旧留新） |
