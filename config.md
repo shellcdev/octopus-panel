@@ -28,6 +28,10 @@
 | default_rounds | 2 | 默认讨论轮次 |
 | default_roles | 4 | 默认角色数量 |
 | consensus_5grid | 启用 | 共识进度条5格模式；设为"禁用"则为10格 |
+| relationship_network_enabled | false | 关系网络总开关；设为 true 后才采集角色间关系数据 |
+| relationship_network_mode | auto | 关系采集模式：`auto`（自动）/ `always`（每场采集）/ `never`（关闭） |
+| stance_history_max_entries | 10 | 立场履历最大保留条数（超出后删旧留新） |
+| stance_history_skip_sessions | (空) | 选择性遗忘：逗号分隔的 session_id，spawn 注入时跳过 |
 
 ---
 
