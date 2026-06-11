@@ -1,4 +1,4 @@
-> 📌 版本：v2.18 | 更新：2026-06-09 | 维护者：石叔
+> 📌 版本：v3.0 | 更新：2026-06-10 | 维护者：石叔
 
 # 八爪议事厅 · 导航中枢
 
@@ -33,6 +33,8 @@
 | `references/summary-format.md` | 石叔总结格式（六维框架）、动态终止、量化判定标准 | 总结阶段 |
 | `references/roles-rules.md` | 角色选择、增加角色、角色替补、模板库管理、标签筛选器 | 生成/替换角色时 |
 | `references/rules-collab.md` | 多人协作、真人插话、主持人模式、L1/L2/L3恢复、归档机制 | 协作场景 |
+| `references/auto-tag-rules.md` | 🆕 自动标签规则（8个标签+置信度公式+生命周期） | 成长系统自动标签判定 |
+| `references/growth-formula.md` | 🆕 成长系统量化公式（EXP/等级/衰减/影响力/成就） | 成长数据调参或审计 |
 
 ---
 
@@ -49,21 +51,33 @@
 
 | 文件 | 行数 | 内容 |
 |---|---|---|
-| `jargon.md` | ~80 | 术语通俗释义 |
-| `rules-discussion.md` | 573 | 讨论规则（点名/讨论板/小结/收敛/帽子兼容/异常场景） |
-| `summary-format.md` | 325 | 总结格式（4种类型） + 量化判定 + 评分卡 |
-| `roles-rules.md` | 164 | 角色管理（选择/增加/替补/模板库） |
-| `rules-collab.md` | 229 | 协作与恢复（多人/L1-L3/归档） |
-| `templates.md` | — | 标准模板参考（含🎩帽子轮Prompt模板） |
-| `role-templates.md` | — | 角色模板库（10组37个角色） |
-| `discussion-examples.md` | — | 20个完整讨论案例 |
+| `jargon.md` | ~430 | 术语通俗释义 |
+| `rules-discussion.md` | 574 | 讨论规则（点名/讨论板/小结/收敛/帽子兼容/异常场景） |
+| `summary-format.md` | 326 | 总结格式（4种类型） + 量化判定 + 评分卡 |
+| `roles-rules.md` | 220 | 角色管理（选择/增加/替补/模板库/标签筛选） |
+| `rules-collab.md` | 361 | 协作与恢复（多人/L1-L3/归档） |
+| `templates.md` | 808 | 标准模板参考（含🎩帽子轮Prompt模板） |
+| `role-templates.md` | 919 | 角色模板库（10组37个角色） |
+| `discussion-examples.md` | 1632 | 20个完整讨论案例 |
+| `auto-tag-rules.md` | 140 | 自动标签规则（8标签+置信度公式） |
+| `growth-formula.md` | — | 🆕 成长系统量化公式（EXP/等级/衰减/影响力/成就） |
 
 ### scripts/ 目录
 
 | 脚本 | 用途 |
 |---|---|
-| `split_skill.py` | 将 SKILL.md 拆分为核心+子文件（整理时用） |
-| `archive_discussion.py` | 将讨论结果归档至知识库（关键词提取+历史关联） |
+| `growth_api.py` | 🆕 角色成长系统核心数据层（7个API：立场/关系/成就/标签/EXP/注入/备份） |
+| `growth_renderer.py` | 🆕 成长卡片渲染器（7段：等级→成就墙→成长树→职业事件→关系→统计→标签） |
+| `export_role.py` | 🆕 角色集市导出/导入（脱敏处理） |
+| `archive_discussion.py` | 讨论归档至知识库 + 评分卡计算 + 成长数据自动更新 |
+| `migrate_growth_data.py` | 🆕 成长数据 Schema 迁移（v1→v2） |
+| `backup_growth_data.py` | 🆕 成长数据备份/还原（30份循环） |
+| `generate_roles.py` | 基于问题关键词生成角色草稿卡 |
+| `validate_role.py` | 角色卡质量校验（必填字段+启发式风险检查） |
+| `role_tester.py` | 角色 Spawn 测试（生成测试 Prompt） |
+| `tag_filter.py` | 角色标签筛选器（多条件 AND 匹配） |
+| `audit_docs.py` | 文档一致性审计（角色数/版本头/CHANGELOG/脚本完整性） |
+| `verify_alias.py` | ROLE_ALIAS 映射验证（别名→模板匹配检查） |
 
 ---
 

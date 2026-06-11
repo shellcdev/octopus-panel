@@ -1,4 +1,4 @@
-﻿> 📌 版本：v2.18 | 更新：2026-06-09 | 维护者：石叔
+﻿> 📌 版本：v3.0 | 更新：2026-06-10 | 维护者：石叔
 > 🔧 运行时路径配置：见 `config.md`，修改该文件即可自定义路径，无需改动 SKILL.md
 
 name: octopus-panel
@@ -331,7 +331,9 @@ description: 多角色圆桌讨论系统（八爪议事厅）。当用户提出�
 | 🟡 建议 | `references/rules-collab.md` | 多人协作、真人插话、L1/L2/L3恢复、归档机制 | 协作场景 |
 | 🟡 建议 | `references/templates.md` | 角色卡/Prompt/讨论板/小结标准格式 | 生成角色前 |
 | 🟡 建议 | `references/role-templates.md` | 已验证的角色模板库 + 前置风控三问 | 生成角色时 |
-| 🟢 可选 | `references/discussion-examples.md` | 7个完整讨论案例（含边界场景） | 质量核对或格式参照 |
+| 🟢 可选 | `references/discussion-examples.md` | 20个完整讨论案例（含边界场景） | 质量核对或格式参照 |
+| 🟢 可选 | `references/auto-tag-rules.md` | 8个自动标签规则（含置信度公式） | 成长系统自动标签判定 |
+| 🟢 可选 | `references/growth-formula.md` | 成长系统量化公式（EXP/等级/衰减/影响力/成就） | 成长数据调参或审计 |
 
 ## 石叔总结格式分档
 
