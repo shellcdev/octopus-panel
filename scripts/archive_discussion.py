@@ -55,7 +55,8 @@ def extract_turning_points(log_content):
 def find_related_archives(question, archive_dir):
     if not os.path.isdir(archive_dir):
         return []
-    keywords = extract_keywords(question)
+    keywords = extract_keywords(question,
+                                max_keywords=int(growth_api._get_config('archive_keyword_count', '5')))
     related = []
     for fname in os.listdir(archive_dir):
         if not fname.endswith('.md'):
@@ -284,7 +285,8 @@ def build_archive_content(question, conclusion, roles, timestamp_iso,
     lines.append('**Question**: ' + question)
     lines.append('')
 
-    tags = extract_keywords(question)
+    tags = extract_keywords(question,
+                             max_keywords=int(growth_api._get_config('archive_keyword_count', '5')))
     if tags:
         lines.append('**Tags**: ' + ' '.join(['#' + t for t in tags]))
         lines.append('')

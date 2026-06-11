@@ -32,6 +32,9 @@
 | relationship_network_mode | auto | 关系采集模式：`auto`（自动）/ `always`（每场采集）/ `never`（关闭） |
 | stance_history_max_entries | 10 | 立场履历最大保留条数（超出后删旧留新） |
 | stance_history_skip_sessions | (空) | 选择性遗忘：逗号分隔的 session_id，spawn 注入时跳过 |
+| backup_keep_count | 30 | 成长数据自动备份保留份数（超出后删旧留新） |
+| deep_mode_inject_count | 3 | deep 模式注入历史立场条数 |
+| archive_keyword_count | 5 | 归档关键词提取数量（≤6字每个） |
 
 ---
 

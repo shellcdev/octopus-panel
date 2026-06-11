@@ -641,8 +641,8 @@ def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1, 
     lines.append('📜 你之前说过：')
 
     if mode == 'deep' and len(eligible) >= 2:
-        # Deep inject: top 3 entries
-        top_n = min(3, len(eligible))
+        # Deep inject: top N entries (configurable)
+        top_n = min(int(_get_config('deep_mode_inject_count', '3')), len(eligible))
         for i in range(top_n):
             e = eligible[i]
             w = e.get('_weight', 0)
@@ -799,8 +799,8 @@ def backup_all(backup_dir=None):
     with codecs.open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    # Auto-evict: keep max 30 backups
-    _evict_old_backups(backup_dir, max_keep=30)
+    # Auto-evict: keep max N backups (configurable)
+    _evict_old_backups(backup_dir, max_keep=int(_get_config('backup_keep_count', '30')))
 
     return filepath
 
