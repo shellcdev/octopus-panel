@@ -34,13 +34,55 @@
 
 | 键 | 默认值 | 说明 |
 |---|---|---|
-| relationship_network_enabled | false | 关系网络总开关；设为 true 后才采集角色间关系数据 |
-| relationship_network_mode | auto | 关系采集模式：`auto`（自动）/ `always`（每场采集）/ `never`（关闭） |
+| relationship_network_enabled | false | 在 auto 模式下，设为 true 后激活关系网络展示和注入 |
+| relationship_network_mode | auto | 关系网三模式：`auto`（先攒再看）/ `always`（永久展示）/ `never`（关就是关）。详见下方 |
 | stance_history_max_entries | 10 | 立场履历最大保留条数（超出后删旧留新） |
 | stance_history_skip_sessions | (空) | 选择性遗忘：逗号分隔的 session_id，spawn 注入时跳过 |
 | backup_keep_count | 30 | 成长数据自动备份保留份数（超出后删旧留新） |
 | deep_mode_inject_count | 3 | deep 模式注入历史立场条数 |
 | archive_keyword_count | 5 | 归档关键词提取数量，每个 ≤6 字 |
+
+### 🔘 关系网络开关详解
+
+#### 全局三模式
+
+| 模式 | 展示 | 采集 | 一句话 |
+|------|------|------|--------|
+| `auto`（默认） | ❌ 条件触发引导 | ✅ 全量采集 | "先攒着，以后再看" |
+| `always` | ✅ 永久展示 | ✅ 全量采集 | "我就要这个" |
+| `never` | ❌ 不展示 | ❌ 不采集 | **"关就是关"** |
+
+配置位置：`relationship_network_enabled`（触发开关）/ `relationship_network_mode`（行为模式）
+
+#### 条件触发引导（auto 模式）
+
+当系统内任意角色有 ≥1 条已建立的关系线时，渲染引导提示：
+
+> 💡 有些角色之间开始建立关系了。说"开启关系网络"解锁。🔗
+
+**原则**：有数据才提示，不提前画饼。
+
+#### 临时开关（单场临时覆盖）
+
+| 用户说 | 效果 | 生命周期 |
+|--------|------|---------|
+| "这轮不要关系" | 当前讨论临时关闭，spawn inject 不注入 | 讨论结束自动清空 |
+| "这轮恢复关系" | 当前讨论提前恢复 | — |
+
+**判断链路**：
+1. 全局 mode=="never" → ❌ 关死了，临时开关无效
+2. 有临时开关（set_session_override）→ 按临时值
+3. mode=="always" → ✅ 直通，跳过 enabled 检查
+4. mode=="auto" → 检查 `relationship_network_enabled`
+
+#### 开关影响对照
+
+| 组件 | auto | always | never |
+|------|------|--------|-------|
+| relationship_lines 采集 | ✅ 全量 | ✅ 全量 | ❌ 不采集 |
+| 角色卡展示 | ❌→开启后→✅ | ✅ | ❌ |
+| spawn inject | ❌→开启后→✅ | ✅ | ❌ |
+| 完整档关系网络图 | ❌→开启后→✅ | ✅ | ❌ |
 
 ---
 

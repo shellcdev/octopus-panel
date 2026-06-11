@@ -734,11 +734,18 @@ def get_compact_display(role_id):
 def is_relationship_enabled():
     """
     Determine if relationship network should be active for current session.
-    Priority: never > session override > global config.
+
+    Priority (highest first):
+      1. mode=='never'     → always False (dead switch)
+      2. mode=='always'   → always True  (bypasses enabled flag)
+      3. session_override  → override value (temporary)
+      4. enabled flag      → auto mode gate
     """
     mode = _get_config('relationship_network_mode', 'auto')
     if mode == 'never':
         return False
+    if mode == 'always':
+        return True
     if _session_relationship_override is not None:
         return _session_relationship_override
     enabled = _get_config('relationship_network_enabled', 'false')
