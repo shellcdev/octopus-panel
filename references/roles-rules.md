@@ -1,4 +1,4 @@
-﻿# 角色管理规则
+# 角色管理规则
 
 > 📌 本文件由 SKILL.md 拆分而来，包含角色选择、增加角色、模板库管理和标签筛选。
 
@@ -8,12 +8,9 @@
 
 | 问题类型 | 推荐角色来源 | 推荐讨论模式 |
 |---|---|---|
-| 人生/道德/职业 | 
-ole-templates.md → 通用人生组 | 串行 或 结对 |
-| 商业/投资/财务 | 
-ole-templates.md → 商业组 或 动态生成 | 串行 或 分组 |
-| 家庭/代际关系 | 
-ole-templates.md → 家庭组 或 动态生成 | 串行 |
+| 人生/道德/职业 | role-templates.md → 通用人生组 | 串行 或 结对 |
+| 商业/投资/财务 | role-templates.md → 商业组 或 动态生成 | 串行 或 分组 |
+| 家庭/代际关系 | role-templates.md → 家庭组 或 动态生成 | 串行 |
 | 技术选型/架构 | 动态生成（CTO + 法务 + 业务 + 运维） | 分组 或 圆桌 |
 | 复杂多维度问题 | 动态生成（≥5个角色） | 分组 |
 | 二选一鲜明对立 | 动态生成（4个角色分2派） | 结对 |
@@ -49,8 +46,7 @@ ole-templates.md → 家庭组 或 动态生成 | 串行 |
 ### 4. 新角色生成流程
 
 1. 石叔生成新角色卡（按角色卡标准格式）
-2. 前置风控三问（详见
-ole-templates.md）
+2. 前置风控三问（详见 role-templates.md）
 3. 贴出新角色卡，让用户确认
 4. 用户确认后，下一轮开始加入
 5. **[强制] 石叔做对立验证**（遮名测试，见「量化判定标准·5. 角色对立性量化核验」），如果失败→重新生成该角色，直到通过
@@ -94,34 +90,27 @@ ole-templates.md）
 
 **新增模板**：
 1. 石叔生成角色卡
-2. 前置风控三问（见 
-ole-templates.md）
-3. 写入 
-ole-templates.md
+2. 前置风控三问（见 role-templates.md）
+3. 写入 role-templates.md
 4. 更新 CHANGELOG.md
 
 **删除模板**：
 1. 确认该模板 ≥30 天未被使用
-2. 从 
-ole-templates.md 移除
-3. 归档到 
-ole-templates-archive.md（不删除，仅归档）
+2. 从 role-templates.md 移除
+3. 归档到 role-templates-archive.md（不删除，仅归档）
 
 **修改模板**：
-1. 修改 
-ole-templates.md 中对应条目
+1. 修改 role-templates.md 中对应条目
 2. 更新 CHANGELOG.md
 3. 若修改了立场/性格/软肋，需重新跑遮名测试
 
 **查看模板**：
-1. 读取 
-ole-templates.md
+1. 读取 role-templates.md
 2. 或用标签筛选器查询（scripts/tag_filter.py）
 
 ### 从模板生成角色的流程
 
-1. 从 
-ole-templates.md 读取模板
+1. 从 role-templates.md 读取模板
 2. 根据当前问题微调立场表述（保持核心立场不变）
 3. 生成角色卡
 4. 贴出角色卡让用户确认
@@ -130,8 +119,7 @@ ole-templates.md 读取模板
 
 - **定期审查**：每 30 天审查一次模板库，移除长期未使用的模板
 - **去重**：相似度 >80% 的模板必须合并或删除其中一个
-- **归档**：删除的模板不物理删除，归档到 
-ole-templates-archive.md
+- **归档**：删除的模板不物理删除，归档到 role-templates-archive.md
 
 ---
 
@@ -221,5 +209,4 @@ python scripts/tag_filter.py 高对立
 
 SKILL.md 中的 ROLE_ALIAS 映射只管「用户输入XX → 系统识别为哪个角色」，不管字数上限。字数上限由本映射独立控制。
 
-若新增角色，必须在 
-ole-templates.md 中标注类型（直觉型/平衡型/分析型），否则石叔默认按平衡型处理。
+若新增角色，必须在 role-templates.md 中标注类型（直觉型/平衡型/分析型），否则石叔默认按平衡型处理。
