@@ -14,6 +14,8 @@
 | archive_dir | {octopus_dir}\archive | 讨论归档目录（.md 文件） |
 | archive_file | {archive_dir}\YYYYMMDD-{topic}.md | 单次归档文件名模板。{topic} 由石叔诊断的"核心矛盾"字段自动提取，≤6字 |
 
+---
+
 ## 偏好（v2.18 新增）
 
 > 修改偏好键即可改变系统默认值，无需改动 SKILL.md。
@@ -27,6 +29,8 @@
 | default_roles | 4 | 默认角色数量 |
 | consensus_5grid | 启用 | 共识进度条5格模式；设为"禁用"则为10格 |
 
+---
+
 ## 用法
 
 SKILL.md 和子文件中遇到路径时，按以下规则解析：
@@ -35,6 +39,8 @@ SKILL.md 和子文件中遇到路径时，按以下规则解析：
 2. {workspace_root} 替换为 workspace_root 键的值
 3. {archive_dir} 替换为 archive_dir 键的值（已展开 workspace_root）
 4. 如果键值是绝对路径，直接使用；如果是相对路径，相对于 workspace_root 解析
+
+---
 
 ## 示例
 
