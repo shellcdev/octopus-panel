@@ -1,2 +1,82 @@
-﻿__pycache__/
-*.pyc
+# ===========================================
+# Python
+# ===========================================
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+.env/
+
+# Type checking / coverage
+.mypy_cache/
+.pytest_cache/
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+*.cover
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ===========================================
+# OpenClaw skill runtime artifacts
+# ===========================================
+*.log
+logs/
+*.json.bak
+growth/
+*.csv.bak
+*.md.bak
+
+# Runtime data (keep the dir, ignore contents)
+data/
+data/**/*
+!.gitkeep
+
+# Downloaded / third-party scripts
+# (placeholders — actual scripts may be downloaded at install time)
+downloads/
+*.sh
+*.sh.bak
+
+# Temp / scratch
+.Scratch/
+tmp/
+tmp/**/*
+!.gitkeep
+
+# Archives and backups
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Local config overrides (do not commit personal settings)
+config.local.md
+config.local.yaml
+openclaw.local.json

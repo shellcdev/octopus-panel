@@ -20,7 +20,6 @@ import json
 import codecs
 import argparse
 import datetime
-from copy import deepcopy
 
 _scripts_dir = os.path.dirname(os.path.abspath(__file__))
 if _scripts_dir not in sys.path:
@@ -103,9 +102,6 @@ def import_role(export_data):
         return False
 
     # Create role with import stamp
-    roles_file = growth_api._get_growth_filepath()
-    roles = growth_api._read_growth_record()
-
     new_role = {
         'version': growth_api._get_current_schema_version(),
         'role_id': role_id,
@@ -125,8 +121,7 @@ def import_role(export_data):
         'auto_tags': [],
         'manual_tags': [],
     }
-    roles.append(new_role)
-    growth_api._write_growth_record(roles)
+    ok = growth_api.upsert_role(new_role)
     print('Imported role: {}'.format(role_id))
     return True
 

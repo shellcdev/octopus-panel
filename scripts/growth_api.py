@@ -50,6 +50,10 @@ def _load_config():
                     if len(parts) >= 4 and parts[1] and parts[2] and parts[1] != '键':
                         key = parts[1]
                         val = parts[2]
+                        # Resolve {CLAW_ROOT} env placeholder first
+                        _claw_root = os.environ.get('CLAW_ROOT', '')
+                        if '{CLAW_ROOT}' in val and _claw_root:
+                            val = val.replace('{CLAW_ROOT}', _claw_root)
                         # Resolve {workspace_root} references
                         if '{workspace_root}' in val and 'workspace_root' in cfg:
                             val = val.replace('{workspace_root}', cfg['workspace_root'])
@@ -546,6 +550,21 @@ def update_auto_tags(role_id):
     return filtered
 
 
+def upsert_role(role_dict):
+    """
+    Add a new role to growth_record.
+    If role_id already exists, do NOT overwrite — return False (caller handles skip).
+    Returns True if added.
+    """
+    roles = _read_growth_record()
+    _, existing = _find_role(roles, role_dict.get('role_id'))
+    if existing is not None:
+        return False
+    roles.append(role_dict)
+    _write_growth_record(roles)
+    return True
+
+
 # ─── Topic classification (shared with archive_discussion.py) ───
 
 def _classify_topic(topic):
@@ -562,6 +581,60 @@ def _classify_topic(topic):
     if any(w in t for w in ['技术', '架构', '选型', '框架', '代码', '开发', '部署', '上线']):
         return 'technical'
     return 'general'
+
+
+# Category relevance matrix: how relevant an old topic category is to the current one.
+# Used by _influence_weight() as the primary "which stance is worth injecting" signal.
+_CATEGORY_MATRIX = {
+    'career': {'career': 1.0, 'financial': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
+    'financial': {'financial': 1.0, 'career': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
+    'family': {'family': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'technical': 0.1},
+    'technical': {'technical': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'family': 0.1},
+    'general': {'general': 0.5, 'career': 0.5, 'financial': 0.5, 'family': 0.5, 'technical': 0.5},
+}
+
+
+def _influence_weight(entry, current_category=''):
+    """
+    SINGLE SOURCE OF TRUTH for stance-history influence weight (0.0-1.0).
+
+    Used at spawn time to rank which past stances are most worth injecting into
+    the current discussion. Higher = more worth surfacing.
+
+    Formula (synthesized: F1 relevance skeleton + rescued stance-shift penalty):
+        w  = 0.3                              # base
+           + relevance * 0.35                 # topic relevance — PRIMARY ranking signal
+           + (score / 100) * 0.2              # debate score contribution
+           + recency_bonus                    # +0.15 if <=1d, +0.08 if <=7d
+        w *= 0.8  if stance is hedged ('但'/'条件')   # stance-shift penalty (hedged ranks lower)
+        w  = round(min(w, 1.0), 2)
+    """
+    weight = 0.3  # base
+    # Topic relevance — primary signal deciding which stance is worth injecting
+    entry_cat = _classify_topic(entry.get('topic', ''))
+    rel_score = _CATEGORY_MATRIX.get(current_category, {}).get(entry_cat, 0.3)
+    weight += rel_score * 0.35
+    # Debate score contribution
+    score = entry.get('score')
+    if score:
+        weight += (score / 100) * 0.2
+    # Recency bonus (additive, capped)
+    sid = entry.get('session_id', '')
+    if sid:
+        try:
+            dt = datetime.datetime.strptime(sid[:8], '%Y%m%d')
+            days_ago = (datetime.datetime.now() - dt).days
+            if days_ago <= 1:
+                weight += 0.15
+            elif days_ago <= 7:
+                weight += 0.08
+        except ValueError:
+            pass
+    # Stance-shift penalty (rescued from the old divergent formula): hedged stances rank lower
+    stance = entry.get('stance', '')
+    if '条件' in stance or '但' in stance:
+        weight *= 0.8
+    return round(min(weight, 1.0), 2)
 
 
 def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1, mode='light'):
@@ -603,36 +676,9 @@ def get_spawn_inject(role_id, current_topic='', current_category='', round_n=1, 
     # Count how many were skipped for display
     skipped_count = sum(1 for s in sh if s.get('session_id') in skip_ids)
 
-    # Calculate influence weight + topic relevance for each eligible entry
-    category_matrix = {
-        'career': {'career': 1.0, 'financial': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
-        'financial': {'financial': 1.0, 'career': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
-        'family': {'family': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'technical': 0.1},
-        'technical': {'technical': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'family': 0.1},
-        'general': {'general': 0.5, 'career': 0.5, 'financial': 0.5, 'family': 0.5, 'technical': 0.5},
-    }
-
-    now = datetime.datetime.now()
+    # Calculate influence weight for each eligible entry via the single source of truth
     for entry in eligible:
-        weight = 0.3  # base
-        entry_cat = _classify_topic(entry.get('topic', ''))
-        rel_score = category_matrix.get(current_category, {}).get(entry_cat, 0.3)
-        weight += rel_score * 0.35
-        score = entry.get('score')
-        if score:
-            weight += (score / 100) * 0.2
-        sid = entry.get('session_id', '')
-        if sid:
-            try:
-                dt = datetime.datetime.strptime(sid[:8], '%Y%m%d')
-                days_ago = (now - dt).days
-                if days_ago <= 1:
-                    weight += 0.15
-                elif days_ago <= 7:
-                    weight += 0.08
-            except ValueError:
-                pass
-        entry['_weight'] = min(weight, 1.0)
+        entry['_weight'] = _influence_weight(entry, current_category)
 
     eligible.sort(key=lambda e: e.get('_weight', 0), reverse=True)
     rel_enabled = is_relationship_enabled()
@@ -861,39 +907,16 @@ def _evict_old_backups(backup_dir, max_keep=30):
 
 # ─── Utility: stance history weight calculation ───
 
-def calc_influence_weight(stance_entry):
+def calc_influence_weight(stance_entry, current_category=''):
     """
-    Calculate influence weight (0.0-1.0) for a single stance history entry.
-    Formula: score × recency × stance_shift_penalty
+    Backward-compatible wrapper — delegates to the single source of truth
+    _influence_weight(). Kept for migrate_schema() backfill and any external callers.
+
+    NOTE: historically this held a divergent THIRD formula (base 0.5, no relevance
+    term, multiplicative time decay) that never entered the runtime and disagreed with
+    both the docs and get_spawn_inject. It is now unified — no separate formula remains.
     """
-    weight = 0.5  # base
-
-    # Score factor
-    score = stance_entry.get('score')
-    if score:
-        weight += (score / 100) * 0.3
-
-    # Stance shift penalty
-    stance = stance_entry.get('stance', '')
-    if '条件' in stance or '但' in stance:
-        weight *= 0.8
-
-    # Recency factor (by session_id date)
-    sid = stance_entry.get('session_id', '')
-    if sid:
-        try:
-            dt = datetime.datetime.strptime(sid[:8], '%Y%m%d')
-            days_ago = (datetime.datetime.now() - dt).days
-            if days_ago <= 3:
-                weight *= 1.0
-            elif days_ago <= 14:
-                weight *= 0.85
-            else:
-                weight *= 0.7
-        except ValueError:
-            pass
-
-    return round(min(weight, 1.0), 2)
+    return _influence_weight(stance_entry, current_category)
 
 
 # ─── Auto-backup trigger ───

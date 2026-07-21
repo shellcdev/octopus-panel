@@ -41,15 +41,13 @@ else:
     print(f'\n=== README.md === 不存在，跳过')
 
 # 3. 所有文件头的版本号
-files = [
-    os.path.join(SKILL_ROOT, 'CHANGELOG.md'),
-    os.path.join(SKILL_ROOT, 'README.md'),
-    os.path.join(SKILL_ROOT, 'SKILL.md'),
-    os.path.join(REFS_DIR, 'role-templates.md'),
-    os.path.join(REFS_DIR, 'templates.md'),
-    os.path.join(REFS_DIR, 'jargon.md'),
-    os.path.join(REFS_DIR, 'discussion-examples.md'),
-]
+files = [os.path.join(SKILL_ROOT, 'config.md')]
+for _nm in sorted(os.listdir(REFS_DIR)):
+    if _nm.endswith('.md'):
+        files.append(os.path.join(REFS_DIR, _nm))
+files += [os.path.join(SKILL_ROOT, 'README.md'),
+          os.path.join(SKILL_ROOT, 'SKILL.md'),
+          os.path.join(SKILL_ROOT, 'TODO.md')]
 print('\n=== 文件头版本号 ===')
 versions = {}
 for fp in files:
@@ -75,8 +73,11 @@ cl_fp = os.path.join(SKILL_ROOT, 'CHANGELOG.md')
 if os.path.exists(cl_fp):
     with open(cl_fp, encoding='utf-8') as f:
         cl = f.read()
-    m = re.search(r'^## (v[\d.]+)', cl, re.MULTILINE)
-    cl_ver = m.group(1) if m else '无'
+    vers = re.findall(r'^## v(\d+(?:\.\d+)*)', cl, re.MULTILINE)
+    if vers:
+        cl_ver = 'v' + max(vers, key=lambda x: tuple(int(p) for p in x.split('.')))
+    else:
+        cl_ver = '无'
     print(f'\n=== CHANGELOG 最新版本 ===')
     print(f'  {cl_ver}')
     if existing_versions:
@@ -93,8 +94,8 @@ if os.path.exists(FP3):
     print(f'映射角色数: {len(map_roles)}')
     missing = [r for r in map_roles if r not in content]
     print(f'role-templates.md 中缺失: {missing if missing else "无"}')
-    extra = [r for r in real_roles if r not in map_roles]
-    print(f'映射中缺失的角色: {extra if extra else "无"}')
+    extra = [r for r in real_roles if not any(m in r for m in map_roles)]
+    print(f'映射中未覆盖的模板角色(本地库角色,可忽略): {extra if extra else "无"}')
 else:
     print(f'\n=== generate_roles.py === 不存在，跳过')
 

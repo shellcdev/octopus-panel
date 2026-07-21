@@ -18,7 +18,6 @@ Dependencies: growth_api.py (must be in same directory)
 
 import os
 import sys
-import datetime
 
 _scripts_dir = os.path.dirname(os.path.abspath(__file__))
 if _scripts_dir not in sys.path:

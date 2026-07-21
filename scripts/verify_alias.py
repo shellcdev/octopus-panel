@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # 验证 ROLE_ALIAS 是否能正确匹配 role-templates.md 里的角色
 
-import re
 import os
 import ast
 import sys

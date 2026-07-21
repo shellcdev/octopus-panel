@@ -16,6 +16,7 @@ import os
 import sys
 import json
 import argparse
+import datetime
 
 _scripts_dir = os.path.dirname(os.path.abspath(__file__))
 if _scripts_dir not in sys.path:
@@ -106,12 +107,12 @@ def main():
         # Write via growth_api (handles atomic write)
         if isinstance(data, dict):
             data['version'] = ver
-            data['updated_at'] = __import__('datetime').datetime.now().isoformat()
+            data['updated_at'] = datetime.datetime.now().isoformat()
             data['roles'] = roles
         else:
             data = {
                 'version': ver,
-                'updated_at': __import__('datetime').datetime.now().isoformat(),
+                'updated_at': datetime.datetime.now().isoformat(),
                 'roles': roles,
             }
 

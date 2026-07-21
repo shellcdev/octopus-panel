@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 role_tester.py - spawn 单角色测试发言是否符合风格锁
 用法：python role_tester.py --role-card role_card.json --test-question "..." --model qclaw/modelroute
@@ -8,7 +9,6 @@ role_tester.py - spawn 单角色测试发言是否符合风格锁
 import argparse
 import json
 import codecs
-import datetime
 
 def build_test_prompt(role_card, test_question, round_num=1):
     """构建测试 prompt（发给子 Agent）"""
