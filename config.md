@@ -23,54 +23,20 @@
 | 键 | 默认值 | 说明 |
 |---|---|---|
 | relationship_network_mode | auto | 关系网三模式：`auto`（先攒再看）/ `always`（永久展示）/ `never`（关就是关）|
-| relationship_network_enabled | false | 在 auto 模式下，设为 true 后激活关系网络展示和注入 |
+| relationship_network_enabled | false | 关系网三模式在 auto / always 模式下，设为 `true` 后激活关系网络展示和注入，默认 `false `|
 | stance_history_max_entries | 10 | 立场履历最大保留条数（超出后删旧留新） |
 | stance_history_skip_sessions | (空) | 选择性遗忘：逗号分隔的 session_id（格式 `YYYYMMDD-话题`），spawn 注入时跳过 |
 | backup_keep_count | 30 | 成长数据自动备份保留份数（超出后删旧留新）。默认 30 份 ≈ 30 天 |
 | deep_mode_inject_count | 3 | deep 模式注入条数（上限 5，设为 0 退化为 light 模式）|
 | topic_slug_length | 6 | 归档文件名 {topic} 截断字数，如 `20260609-开咖啡馆.md` |
 
-### 🔘 关系网络开关详解
+### 🔘 关系网络开关
 
-#### 全局三模式
+**三模式**：`auto`（默认，有数据时引导解锁）/ `always`（永久展示）/ `never`（关就是关，不采集）
 
-| 模式 | 展示 | 采集 | 一句话 |
-|------|------|------|--------|
-| `auto`（默认） | ❌ 条件触发引导 | ✅ 全量采集 | "先攒着，以后再看" |
-| `always` | ✅ 永久展示 | ✅ 全量采集 | "我就要这个" |
-| `never` | ❌ 不展示 | ❌ 不采集 | **"关就是关"** |
+**临时开关**：说"这轮不要关系"单场关闭，讨论结束自动恢复
 
-配置位置：`relationship_network_enabled`（触发开关）/ `relationship_network_mode`（行为模式）
-
-#### 条件触发引导（auto 模式）
-
-当系统内任意角色有 ≥1 条已建立的关系线时，渲染引导提示：
-
-> 💡 有些角色之间开始建立关系了。说"开启关系网络"解锁。🔗
-
-**原则**：有数据才提示，不提前画饼。
-
-#### 临时开关（单场临时覆盖）
-
-| 用户说 | 效果 | 生命周期 |
-|--------|------|---------|
-| "这轮不要关系" | 当前讨论临时关闭，spawn inject 不注入 | 讨论结束自动清空 |
-| "这轮恢复关系" | 当前讨论提前恢复 | — |
-
-**判断链路**：
-1. 全局 mode=="never" → ❌ 关死了，临时开关无效
-2. 有临时开关（set_session_override）→ 按临时值
-3. mode=="always" → ✅ 直通，跳过 enabled 检查
-4. mode=="auto" → 检查 `relationship_network_enabled`
-
-#### 开关影响对照
-
-| 组件 | auto | always | never |
-|------|------|--------|-------|
-| relationship_lines 采集 | ✅ 全量 | ✅ 全量 | ❌ 不采集 |
-| 角色卡展示 | ❌→开启后→✅ | ✅ | ❌ |
-| spawn inject | ❌→开启后→✅ | ✅ | ❌ |
-| 完整档关系网络图 | ❌→开启后→✅ | ✅ | ❌ |
+**判断链路**：`never` 优先 > 临时开关 > `always` 直通 > `auto` 检查 enabled
 
 ---
 
@@ -78,12 +44,8 @@
 
 SKILL.md 和子文件中遇到路径时，按以下规则解析：
 
-1. 先查 config.md 对应键的值
-2. `{workspace_root}` 替换为 workspace_root 的值
-3. `{octopus_dir}` 替换为 octopus_dir 的值（已展开 workspace_root）
-4. `{archive_dir}` 替换为 archive_dir 的值（已展开 octopus_dir）
-5. `{growth_dir}` 替换为 growth_dir 的值（已展开 octopus_dir）
-6. 如果键值是绝对路径，直接使用；如果是相对路径，相对于 workspace_root 解析
+1. 先查 config.md 对应键的值，替换为对应的值
+2. 如果键值是绝对路径，直接使用；如果是相对路径，相对于 workspace_root 解析
 
 ---
 

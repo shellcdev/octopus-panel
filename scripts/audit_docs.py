@@ -101,7 +101,7 @@ else:
 # 6. scripts/ 目录完整性
 print(f'\n=== scripts/ 目录完整性 ===')
 expected_scripts = ['archive_discussion.py', 'generate_roles.py', 'tag_filter.py',
-                    'validate_role.py', 'split_skill.py']
+                    'validate_role.py']
 for s in expected_scripts:
     exists = os.path.exists(os.path.join(SCRIPTS_DIR, s))
     print(f'  {s}: {"✅" if exists else "❌ 缺失"}')
