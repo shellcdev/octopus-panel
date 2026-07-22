@@ -1,5 +1,17 @@
 # 版本变更日志
 
+## v3.1.27 · 还原角色来源配置段（2026-07-22）
+
+### 修复（跨副本对齐 v2.0）
+- **还原「角色来源」配置段**：v3.1.26 在「成长系统偏好」重构中整段丢失 `## 角色来源`（3 键），但 README.md:140/142 仍在教用户改 `role_source_mode` / `pure_generated_handling`（已不存在的键）→ 配置静默失效。本次从 v2.0（config v3.1.15）移植回 3 键：`role_source_mode`(generate/local_priority/local_only) / `role_extract_merge`(true/false) / `pure_generated_handling`(ask/no)。
+- **结构对齐 v2.0 的 5 类布局**：原「成长系统偏好」（7 键）拆回「角色成长」(4 键) + 「关系网络」(2 键，含开关子节与 ⚠️ role_source_mode 交互注)；`topic_slug_length` 从成长段移至「输出与校验」，使该段计 2 键。现结构：路径6 / 角色来源3 / 角色成长4 / 关系网络2 / 输出与校验2 = 17 键，README.md:76 声明成立。
+- **附带补全**：关系网络段补回 v2.0 的 ⚠️ 交互说明（generate 默认下角色不写 growth_record → 关系网永无数据 → 即便 enabled 也空置），解释默认配置下关系网"开了却没内容"的根因。
+
+### 验证
+- config 键数实测：路径6 / 角色来源3 / 角色成长4 / 关系网络2 / 输出与校验2（5 类共 17 键）；调度预设另 2 键
+- README.md:76「5类共17个配置键」声明现与实际一致；README:140/142 引用的 `role_source_mode` / `pure_generated_handling` 现已真实存在
+- 无 成长系统偏好 悬空引用（该段标题已移除，外部仅引用键名）
+
 ## v3.1.26 · scripts 命名规范化（2026-07-22）
 
 ### 优化
