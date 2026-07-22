@@ -309,17 +309,17 @@ description: 多角色圆桌讨论系统（八爪议事厅）。当用户提出�
 > 单开关控制调度模式，无需复杂配置。所有档位与讨论模式、快速模式完全正交可叠加。
 > 自动选档：议题复杂度 < `schedule_auto_switch_threshold`（默认 0.7）→ `balanced`；≥ 阈值 → `stable`。
 
-| 档位 | 每轮 spawn | 角色隔离 | 多轮安全 | 时延来源 |
+| 档位 | 每轮 spawn | 角色隔离 | 多轮安全 | spawn 行为（派生时延） |
 |---|---|---|---|---|
-| 🛡️ `stable` | 每角色 1 次（N 次）| ✅ 完全隔离 | ✅ | 子 agent 会话创建+回传重排，最慢 |
-| ⚖️ `balanced`（推荐）| 0 次（石叔 inline 复合 Prompt）| ❌（靠风格锁压）| ✅（≤2轮硬闸，第3轮升stable）| 砍掉子agent会话创建+回传重排，时延最低、最快出结果 |
+| 🛡️ `stable` | 每角色 1 次（N 次）| ✅ 完全隔离 | ✅ | 逐角色 spawn：有会话创建+回传重排，派生时延最高 |
+| ⚖️ `balanced`（推荐）| 0 次（石叔 inline 复合 Prompt）| ❌（靠风格锁压）| ✅（≤2轮硬闸，第3轮升stable）| 不 spawn：无会话创建/回传重排，派生时延最低（结果最快） |
 | 🤖 `auto` | 随选档 | 随选档 | 随选档 | 动态 |
 
 ### stable（真子 Agent 全量）
 每角色独立 `sessions_spawn`，子 agent 上下文完全隔离，保真度最高。复杂长议题、深度分析、重要决策场景用此档。
 
-### balanced（石叔 inline 复合 Prompt）—— 默认快结果档（时延优先）
-**优化轴 = 时延，不是 token。** 目标：最快出结论。手段：砍掉子 agent 会话创建、回传、重排的三道延迟。
+### balanced（石叔 inline 复合 Prompt）—— 默认档（spawn 行为：不 spawn 子 agent）
+**`schedule_mode` 只控制是否/如何使用子 agent**，本档定义即「不 spawn 子 agent，由石叔主上下文 inline 复合 Prompt 模拟全部角色」。结果最快只是不 spawn 的派生效果，不是定义轴。
 
 **核心机制**：石叔**不 spawn 任何子 agent**，而是在主上下文直接按「复合 Prompt」连续模拟 N 个角色发言（单人独演）。角色隔离不靠子 agent，靠下方「虚拟隔离墙」三技术（与是否 spawn 无关）。
 
@@ -356,7 +356,7 @@ description: 多角色圆桌讨论系统（八爪议事厅）。当用户提出�
 ### auto（自动档）
 石叔按①诊断的议题复杂度打分（维度：干系人数量 / 硬权衡 / 事实不确定性 / 长尾影响 / 价值冲突）。任一"硬权衡 + 价值冲突"组合 → 直接 `stable`；其余按阈值选 `balanced` / `stable`。阈值见 `schedule_auto_switch_threshold`。
 
-> 注：`fast` 不单独成档——快结果已由 `balanced`（时延优先）承担，“更快”可叠加正交「快速模式」（呈现层，去花活只留板+六维总结）。两维度叠加见 config.md「🧩 调度预设」。
+> 注：`fast` 不单独成档——它和 `balanced` 一样不 spawn 子 agent，仅 spawn 行为细节不同，故并入 `balanced`；“更快”可叠加正交「快速模式」（呈现层，去花活只留板+六维总结）。两维度叠加见 config.md「🧩 调度预设」。
 
 ### 工具盘提示（石叔在②.5输出）
 
