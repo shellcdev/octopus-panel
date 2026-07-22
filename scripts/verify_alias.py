@@ -1,70 +1,49 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# 验证 ROLE_ALIAS 是否能正确匹配 role-templates.md 里的角色
+# 校验 generate_roles.py 的 QUESTION_TYPE_MAP 中每个角色名是否都能在
+# role-templates.md 模板库中找到定义（检测悬空映射 / 拼写漂移）。
+# 替代原 ROLE_ALIAS 死数据校验（ROLE_ALIAS 已下沉移除）。
 
 import os
-import ast
+import re
 import sys
 import io
+import ast
 
 # Windows GBK 终端兼容
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
-# --- 路径解析：从 config.md 读取 skill_root ---
-def get_skill_root():
-    """从 config.md 读取 workspace_root，推导 skill_root"""
-    # 脚本所在目录
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    # skill_root = scripts 的上级目录
-    return os.path.dirname(script_dir)
+SKILL_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FP_TMPL = os.path.join(SKILL_ROOT, 'references', 'role-templates.md')
+FP_GEN = os.path.join(SKILL_ROOT, 'scripts', 'generate_roles.py')
 
-SKILL_ROOT = get_skill_root()
-
-# 读取 role-templates.md
-FP = os.path.join(SKILL_ROOT, 'references', 'role-templates.md')
-with open(FP, encoding='utf-8') as f:
-    content = f.read()
-
-# 读取 generate_roles.py 里的 ROLE_ALIAS
-FP2 = os.path.join(SKILL_ROOT, 'scripts', 'generate_roles.py')
-with open(FP2, encoding='utf-8') as f:
+with open(FP_TMPL, encoding='utf-8') as f:
+    tmpl = f.read()
+with open(FP_GEN, encoding='utf-8') as f:
     pycode = f.read()
 
-# 提取 ROLE_ALIAS 字典
-start = pycode.find('ROLE_ALIAS = {')
-start += len('ROLE_ALIAS = ')
-brace_count = 0
-end = start
-for i in range(start, len(pycode)):
-    if pycode[i] == '{':
-        brace_count += 1
-    elif pycode[i] == '}':
-        brace_count -= 1
-        if brace_count == 0:
-            end = i + 1
-            break
-alias_dict = ast.literal_eval(pycode[start:end].strip())
+# 提取 QUESTION_TYPE_MAP 字典
+m = re.search(r'QUESTION_TYPE_MAP\s*=\s*(\{.*?\})', pycode, re.S)
+if not m:
+    print('❌ 未在 generate_roles.py 找到 QUESTION_TYPE_MAP')
+    sys.exit(1)
+map_dict = ast.literal_eval(m.group(1))
+names = [n for vals in map_dict.values() for n in vals]
 
-print(f'ROLE_ALIAS 映射数: {len(alias_dict)}')
+# 模板库角色名集合：括号前全名 + 核心名
+full = re.findall(r'^###\s+\S+\s+([^\n（(]+)', tmpl, re.M)
+core = [s.split('（')[0].split('(')[0].strip()
+        for s in re.findall(r'^###\s+\S+\s+(\S+)', tmpl, re.M)]
+tmpl_roles = set(full) | set(core)
 
-# 检查每个别名是否能匹配到 role-templates.md 里的标题
-matched = 0
-missing = []
-for alias, full_title in alias_dict.items():
-    if full_title in content:
-        matched += 1
-    else:
-        title_no_emoji = full_title.split(' ', 1)[1] if ' ' in full_title else full_title
-        if title_no_emoji in content:
-            matched += 1
-        else:
-            missing.append((alias, full_title))
-
-print(f'匹配成功: {matched}/{len(alias_dict)}')
+missing = [n for n in names if n not in tmpl_roles]
+print(f'QUESTION_TYPE_MAP 引用角色名: {len(names)}')
+print(f'role-templates.md 角色名集合: {len(tmpl_roles)}')
 if missing:
-    print(f'匹配失败:')
-    for alias, title in missing:
-        print(f'  {alias} -> {title}')
+    print('❌ 模板库缺失以下映射角色:')
+    for n in missing:
+        print(f'  {n}')
+    sys.exit(1)
 else:
-    print('✅ 所有别名都能正确匹配')
+    print('✅ 所有映射角色均在模板库中找到定义')

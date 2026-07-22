@@ -45,44 +45,6 @@ QUESTION_TYPE_MAP = {
     "创业": ["天使投资人老钱", "连续创业者老孙", "行业专家老周", "失败创业者老亏"],
     "家庭": ["外婆", "都市青年", "年轻人伴侣小雨"],
 }
-# 角色简称 → role-templates.md 里的完整标题（用于查找角色定义）
-ROLE_ALIAS = {
-    "王经理": "🎯 王经理（中层管理者）",
-    "李阿姨": "🏠 李阿姨（家人视角）",
-    "张总": "💰 张总（创业者/老板）",
-    "赵猎头": "🕵️ 赵猎头（职场情报员）",
-    "架构师老张": "👨‍💻 架构师老张（资深架构师）",
-    "运维小李": "🛠️ 运维小李（SRE/运维）",
-    "安全老王": "🔒 安全老王（安全工程师）",
-    "产品小周": "📱 产品小周（产品经理）",
-    "学霸家长刘妈": "👩 学霸家长刘妈（鸡娃家长）",
-    "佛系家长陈爸": "👨 佛系家长陈爸（佛系家长）",
-    "班主任吴老师": "👩‍🏫 班主任吴老师（班主任）",
-    "留学顾问Fiona": "✈️ 留学顾问Fiona（留学顾问）",
-    "医生老李": "🩺 医生老李（主治医生）",
-    "患者家属小王": "😰 患者家属小王（患者家属）",
-    "医保专员小周": "💳 医保专员小周（医保专员）",
-    "年轻医生小赵": "🧑‍⚕️ 年轻医生小赵（住院医）",
-    "律师张姐": "⚖️ 律师张姐（诉讼律师）",
-    "合规官小刘": "📋 合规官小刘（企业合规）",
-    "法官老郑": "⚖️ 法官老郑（退休法官）",
-    "法学教授老吴": "🎓 法学教授老吴（法学教授）",
-    "天使投资人老钱": "💰 天使投资人老钱（早期投资人）",
-    "连续创业者老孙": "🚀 连续创业者老孙（三次创业成功）",
-    "行业专家老周": "🔬 行业专家老周（行业研究员）",
-    "失败创业者老吴": "💔 失败创业者老亏（连续创业失败者）",
-    "外婆": "👵 外婆（传统智慧）",
-    "都市青年": "👨‍💼 都市青年（当代焦虑体）",
-    "年轻人伴侣小雨": "💑 年轻人伴侣小雨（设计师）",
-    "HR李姐": "👩‍💼 HR总监李姐（HR总监）",
-    "老板陈总": "👔 老板陈总（制造厂老板）",
-    "员工小张": "🧑‍💼 员工小张（基层员工·被画饼专业户）",
-    "赌徒": "🃏 赌徒（老六）",
-    "寂": "💀 寂（观察者）",
-    "爆破手": "💣 爆破手（拆迁办主任）",
-    "冰": "🧊 冰（理性派/数据分析师）",
-}
-
 
 def detect_question_type(question):
     """简单关键词匹配，判断问题类型"""
@@ -165,28 +127,6 @@ def _pick_local_roles(question, count, qtype=None):
             picked.append(info)
     return picked[:count]
 
-def _is_local_role_name(role_name):
-    """判定名字是否在本地库（role-templates.md 或 growth_record.json）。与 archive 端一致。"""
-    if not role_name or role_name == 'Unknown':
-        return False
-    try:
-        data = growth_api._read_growth_record()
-        for r in data.get('roles', []):
-            if r.get('role_id') == role_name:
-                return True
-    except Exception:
-        pass
-    tmpl_path = os.path.join(SKILL_ROOT, 'references', 'role-templates.md')
-    try:
-        with codecs.open(tmpl_path, 'r', encoding='utf-8') as f:
-            txt = f.read()
-        for m in re.finditer(r'^###\s+\S+\s+([^\n（(]+)', txt, re.M):
-            if m.group(1).strip() == role_name:
-                return True
-    except FileNotFoundError:
-        pass
-    return False
-
 def _inject_growth_hint(role_name):
     """若本地成长库有同名角色，返回其最新立场作为生成提示注入。"""
     try:
@@ -215,7 +155,7 @@ def generate_roles(question, count=4):
     def _mark_pure(roles_list):
         """对纯生成(不在本地库)角色按 handling 开关打标记/提示。"""
         for r in roles_list:
-            in_lib = _is_local_role_name(r['name'])
+            in_lib = growth_api._is_local_role_name(r['name'])
             r['local_role'] = in_lib
             if not in_lib and handling == 'ask':
                 r['suggest_localize'] = True
@@ -277,13 +217,13 @@ def _dynamic_generate(question, count, exclude=None, exclude_local=False, mode='
     qtype = detect_question_type(question)
     templates = QUESTION_TYPE_MAP.get(qtype, QUESTION_TYPE_MAP["职场"])
     selected = [n for n in dict.fromkeys(templates)
-                if n not in exclude and not (exclude_local and _is_local_role_name(n))][:count]
+                if n not in exclude and not (exclude_local and growth_api._is_local_role_name(n))][:count]
     all_roles = []
     for qt in ["职场", "家庭", "创业", "技术"]:
         if qt != qtype:
             all_roles.extend(QUESTION_TYPE_MAP.get(qt, []))
     generic = [g for g in dict.fromkeys(all_roles)
-               if g not in exclude and not (exclude_local and _is_local_role_name(g))]
+               if g not in exclude and not (exclude_local and growth_api._is_local_role_name(g))]
     while len(selected) < count:
         added = False
         for g in generic:
@@ -301,13 +241,13 @@ def _dynamic_generate(question, count, exclude=None, exclude_local=False, mode='
         for cand in SYNTHETIC_POOL:
             if len(selected) >= count:
                 break
-            if cand not in used and not _is_local_role_name(cand):
+            if cand not in used and not growth_api._is_local_role_name(cand):
                 selected.append(cand)
                 used.add(cand)
         extra = 1
         while len(selected) < count and extra <= 999:
             cand = "新视角{}".format(extra)
-            if cand not in used and not _is_local_role_name(cand):
+            if cand not in used and not growth_api._is_local_role_name(cand):
                 selected.append(cand)
                 used.add(cand)
             extra += 1

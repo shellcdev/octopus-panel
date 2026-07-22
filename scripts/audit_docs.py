@@ -22,7 +22,7 @@ with open(FP, encoding='utf-8') as f:
     content = f.read()
 
 headers = re.findall(r'^### (.+)$', content, re.MULTILINE)
-real_roles = [h for h in headers if '模板' not in h and '占位' not in h]
+real_roles = [h for h in headers if '模板' not in h and '占位' not in h and '[角色名]' not in h]
 print('=== role-templates.md ===')
 print(f'### 标题行: {len(headers)} 个')
 print(f'实际角色: {len(real_roles)} 个')

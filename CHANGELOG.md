@@ -1,10 +1,19 @@
 # 版本变更日志
 
+## v3.1.24 · scripts 缺陷修复与去重（2026-07-22）
+
+### 修复
+- 🔴 修复 growth_api.py config.md 解析 bug：`key=parts[1]` 未剥反引号，导致换机器改 `workspace_root`/`growth_dir`/`archive_dir` 无效（`_get_config('topic_slug_length')` 原返回 `''`，修复后返回 `'6'`）
+- 角色数校正：声明「8组37个角色」→「8组36个角色」（role-templates.md:899 `### [emoji] [角色名]` 为格式说明行，非角色卡；audit_docs 一并排除该格式行）
+- 修审计误报：audit_all.py 新增捕获 `是否全部一致: False` 信号，不再误报 PASS
+- 悬空引用：补建 `references/role-templates-archive.md`（归档区）；CHANGELOG 标注 `scripts/split_skill.py` 未纳入版本管理
+- 重复代码下沉：本地角色判定统一到 `growth_api._is_local_role_name`（generate_roles / archive_discussion 共用）；删除 generate_roles 的死数据 `ROLE_ALIAS`，verify_alias.py 改为校验 `QUESTION_TYPE_MAP` 映射完整性
+
 ## v3.1.23 · 跨文档一致性修复（2026-07-22）
 
 ### 修复
 - 补 CHANGELOG 缺口：追平 v3.1.20（Emoji 语义规范+排版优化）、v3.1.21（逻辑结构优化：TOC+核心流程上移+参考索引去重）、v3.1.22（冗余分析：反馈通道去重，移出 SKILL.md 仅留 README）三条历史条目
-- README 角色模板库描述校正：「10组40个角色」→「8组37个角色」（实际 8 个角色分组、37 个角色卡，审计实算）
+- README 角色模板库描述校正：「10组40个角色」→「8组36个角色」（实际 8 个角色分组、36 个角色卡；role-templates.md:899 `### [emoji] [角色名]` 为格式说明行，不计入角色）
 - Meta 文档版本头对齐：README / TODO / config / CHANGELOG 同步至 v3.1.23（SKILL 为权威版本号）
 
 ## v3.1.22 · 冗余分析：反馈通道去重（2026-07-22）
@@ -135,7 +144,7 @@
   - `summary-format.md`（总结格式）
   - `roles-rules.md`（角色规则）
   - `rules-collab.md`（协作规则）
-- 新增 `scripts/split_skill.py`（用于 SKILL.md 拆分）
+- 新增 `scripts/split_skill.py`（用于 SKILL.md 拆分；该脚本未纳入版本管理，仅历史记录）
 
 ### 新增文档
 - 点名机制/角色插入/讨论板格式/阶段性小结/收敛机制/异常场景 等详细规则

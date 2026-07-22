@@ -48,8 +48,10 @@ def _load_config():
                 if '|' in line and line.count('|') >= 3:
                     parts = [p.strip() for p in line.split('|')]
                     if len(parts) >= 4 and parts[1] and parts[2] and parts[1] != '键':
-                        key = parts[1]
-                        val = parts[2]
+                        # 配置表键/值单元格被反引号包裹（如 `workspace_root`），需剥除反引号
+                        # 否则 key 带反引号导致跨键引用替换失败、默认值覆盖，换机器改 config 无效
+                        key = parts[1].strip('`')
+                        val = parts[2].strip('`')
                         # Resolve {CLAW_ROOT} env placeholder first
                         _claw_root = os.environ.get('CLAW_ROOT', '')
                         if '{CLAW_ROOT}' in val and _claw_root:
@@ -88,6 +90,33 @@ def _get_config(key, default=''):
 
 def _get_growth_dir():
     return _get_config('growth_dir')
+
+
+def _is_local_role_name(role_name):
+    """判断角色名是否属于本地库（role-templates.md 有模板 或 growth_record.json 有成长记录）。
+    统一实现，供 generate_roles / archive_discussion 共用，消除重复解析。"""
+    if not role_name or role_name == 'Unknown':
+        return False
+    # 1) 成长记录已有该角色
+    try:
+        data = _read_growth_record()
+        for r in data.get('roles', []):
+            if r.get('role_id') == role_name:
+                return True
+    except Exception:
+        pass
+    # 2) 模板库有该角色全名（括号前部分）
+    tmpl_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             'references', 'role-templates.md')
+    try:
+        with codecs.open(tmpl_path, 'r', encoding='utf-8') as f:
+            txt = f.read()
+        for m in re.finditer(r'^###\s+\S+\s+([^\n（(]+)', txt, re.M):
+            if m.group(1).strip() == role_name:
+                return True
+    except FileNotFoundError:
+        pass
+    return False
 
 
 def _get_growth_filepath():

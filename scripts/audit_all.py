@@ -52,7 +52,7 @@ def main():
     if out1:
         for line in out1.splitlines():
             # 仅捕获「真正不一致/缺失」信号，忽略 "缺失: 无" 这类否定表述
-            if ('不一致' in line) or ('❌' in line):
+            if ('不一致' in line) or ('❌' in line) or ('是否全部一致' in line and 'False' in line):
                 warn_audit.append(line.strip())
             elif ('缺失' in line) and ('缺失: 无' not in line) and ('缺失：无' not in line):
                 warn_audit.append(line.strip())

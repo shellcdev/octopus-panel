@@ -34,32 +34,8 @@ def extract_keywords(text, max_keywords=5):
     return words[:max_keywords]
 
 def _is_local_role(role_name):
-    """判断角色是否属于「本地库」(持久层)。
-    本地库 = role-templates.md 中有模板定义，或 growth_record.json 已有该 role_id。
-    返回 True 表示应参与成长累积；False 表示纯生成一次性角色，跳过 growth 写入。
-    """
-    if not role_name or role_name == 'Unknown':
-        return False
-    # 1) growth_record.json 已有该角色 -> 本地成长角色
-    try:
-        data = growth_api._read_growth_record()
-        for r in data.get('roles', []):
-            if r.get('role_id') == role_name:
-                return True
-    except Exception:
-        pass
-    # 2) role-templates.md 有该角色名 -> 本地模板角色
-    tmpl_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                             'references', 'role-templates.md')
-    try:
-        with codecs.open(tmpl_path, 'r', encoding='utf-8') as f:
-            txt = f.read()
-        for m in re.finditer(r'^###\s+\S+\s+([^\n（(]+)', txt, re.M):
-            if m.group(1).strip() == role_name:
-                return True
-    except FileNotFoundError:
-        pass
-    return False
+    """判断角色是否属于「本地库」(持久层)。委托 growth_api._is_local_role_name 统一实现。"""
+    return growth_api._is_local_role_name(role_name)
 
 
 def _has_pending_placeholder(roles):
