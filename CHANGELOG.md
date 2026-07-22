@@ -1,5 +1,10 @@
 # 版本变更日志
 
+## v3.1.33 · 加固 role_verify_alias 常量抽取（2026-07-22）
+
+- **问题**：`role_verify_alias.py` 用正则 `re.search(r'QUESTION_TYPE_MAP\s*=\s*(\{.*?\})')` 从 `role_generate.py` 源码抽取字典再 `ast.literal_eval`。非贪婪匹配遇嵌套括号即截半崩溃，属脆弱解析。
+- **修复**：改为直接 `from role_generate import QUESTION_TYPE_MAP`，以模块级常量为单一真相源；删除读源码 + 正则 + `ast` 依赖。字典含嵌套括号也能正确读取。
+
 ## v3.1.32 · 修复 config.md 版本头漂移（2026-07-22）
 
 - **问题**：`audit_all` 报「是否全部一致: False / 与文件头版本一致: False」；根因是 config.md 在 v3.1.31 被改动（`workspace_root` 去硬编码 + 示例段）却漏 bump 版本头，停在 v3.1.27，而 SKILL/README/TODO/CHANGELOG 已是 v3.1.31。

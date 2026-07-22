@@ -8,28 +8,24 @@ import os
 import re
 import sys
 import io
-import ast
 
 # Windows GBK 终端兼容
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
+# 确保同目录模块可 import（复用 role_generate 的常量，避免正则扒源码的脆弱性）
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from role_generate import QUESTION_TYPE_MAP
+
 SKILL_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FP_TMPL = os.path.join(SKILL_ROOT, 'references', 'role-templates.md')
-FP_GEN = os.path.join(SKILL_ROOT, 'scripts', 'role_generate.py')
 
 with open(FP_TMPL, encoding='utf-8') as f:
     tmpl = f.read()
-with open(FP_GEN, encoding='utf-8') as f:
-    pycode = f.read()
 
-# 提取 QUESTION_TYPE_MAP 字典
-m = re.search(r'QUESTION_TYPE_MAP\s*=\s*(\{.*?\})', pycode, re.S)
-if not m:
-    print('❌ 未在 role_generate.py 找到 QUESTION_TYPE_MAP')
-    sys.exit(1)
-map_dict = ast.literal_eval(m.group(1))
-names = [n for vals in map_dict.values() for n in vals]
+# 映射角色名直接复用 role_generate.QUESTION_TYPE_MAP（模块级常量，单一真相源）
+# 一旦该 dict 含嵌套括号也能正确读取，不再依赖非贪婪正则截半
+names = [n for vals in QUESTION_TYPE_MAP.values() for n in vals]
 
 # 模板库角色名集合：括号前全名 + 核心名
 # 跳过格式示例占位行（如 '### [emoji] [角色名]（...）'）
