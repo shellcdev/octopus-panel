@@ -1,4 +1,4 @@
-> 📌 版本：v3.1.29 | 更新：2026-07-22 | 维护者：石叔
+> 📌 版本：v3.1.30 | 更新：2026-07-22 | 维护者：石叔
 > 🔧 运行时路径配置：见 `config.md`，修改该文件即可自定义路径，无需改动 SKILL.md
 
 name: octopus-panel
@@ -75,7 +75,7 @@ description: 多角色圆桌讨论系统（八爪议事厅）。当用户提出�
 - **`local_priority`**：优先复用本地有成长史角色，不足再动态补；补的角色按 `pure_generated_handling`（`ask`/`no`）提示是否转正存库。
 - **`local_only`**：只从本地库挑，绝不现场造。
 
-> 纯生成角色转正：当 `role_generate.py` 判定某角色为库外纯生成（`pure_generated_handling=ask` 时标记 `suggest_localize` 并输出 `PROMPT:` 提示），石叔可经「记住这个角色」将其写入 `role-templates.md` 转正复用；未决前不 spawn 该角色。详见 `references/roles-rules.md`。
+> 纯生成角色转正：当 `role_generate.py` 判定某角色为库外纯生成（`pure_generated_handling=ask` 时标记 `suggest_localize` 并输出 `PROMPT:` 提示），石叔按 `references/roles-rules.md` 的「纯生成角色转正流程」用 `render_ui` 弹「存/不存」决策，转正则写入 `role-templates.md` 复用；未决前不 spawn 该角色。（硬性规则 12）
 
 ### ②.5 工具盘提示（石叔在②.5输出）
 
@@ -464,6 +464,7 @@ description: 多角色圆桌讨论系统（八爪议事厅）。当用户提出�
 9. **立场履历注入**（第N=1轮，仅角色有 stance_history 时）：spawn每个角色前，调用 `growth_api.get_spawn_inject()` 获取立场履历文本并注入到 prompt 的「📜 立场履历注入」节。第N≥2轮跳过，避免重复引用
 10. **引用校验（cite_verify 开启时）**：config.md `cite_verify=true`（默认）时，spawn 每个角色的 prompt 必须注入 `templates.md` 的「🔍 引用校验指令」节；石叔遇强事实主张可派 researcher 实时核验，总结按 `summary-format.md` 标「未核验」风险
 11. **调度档位决定 spawn 方式**（受 `schedule_mode` 控制）：`stable` 必须按模式规则逐个/并行 `sessions_spawn` 角色（硬性规则 #1）；`balanced` **不 spawn 任何子 agent**，由石叔主上下文 inline 复合 Prompt 一次性生成全部角色（见「🧩 调度档位执行分支」章），默认 1 轮直出结果、≤2 轮、第3轮自动升 `stable`；`auto` 按复杂度选档后走对应分支。
+12. **角色来源走脚本**（第①步后）：石叔诊断完成后，**必须调用 `role_generate.py`** 产出角色（受 `role_source_mode` 控制），不得手编角色名；模式细节与避撞名规则见 ② 角色生成段。脚本输出的 `PROMPT:` 行表示有库外纯生成角色待转正，石叔按 `references/roles-rules.md` 的「纯生成角色转正流程」用 `render_ui` 弹「存/不存」决策，未决前不 spawn 该角色。
 
 ## 柔性规则（可调整）
 

@@ -68,6 +68,21 @@
 
 ---
 
+## 纯生成角色转正流程
+
+**背景**：角色来源开关 `role_source_mode` 在 `local_priority` / `generate` 模式下，可能动态补出「本地库查无记录」的纯生成角色。这些角色本场是一次性的（归档时不写入 `growth_record.json`），但石叔应主动询问用户是否将其转为本地持久角色。
+
+**触发条件**：`role_generate.py` 输出含 `PROMPT: 角色X是否转正存库` 且 `config.md` 的 `pure_generated_handling=ask`（默认）。
+
+**流程**：
+1. 石叔收集本轮所有待转正角色（脚本 `notes` 中的 PROMPT 项）
+2. 用 `render_ui`（QuestionForm，每角色一题，选项 `存 / 不存`）一次性弹给用户
+3. 用户回「存」→ 走下方「新增模板」流程：生成完整角色卡（含背景/立场/风格锁/软肋）→ 前置风控三问（见 `role-templates.md`）→ 写入 `role-templates.md` → 更新 CHANGELOG.md；该角色自此成为本地库角色，后续讨论可复用并累积成长
+4. 用户回「不存」→ 该角色保持一次性，本场结束后不落库；`archive_discussion.py` 的 `_is_local_role` 会自动跳过其 growth 写入
+5. 若 `pure_generated_handling=no`：石叔静默不提示，所有库外角色一律一次性（不污染本地库）
+
+**边界**：`QUESTION_TYPE_MAP` 基础名（王经理/李阿姨/张总/赵猎头）本就在 `role-templates.md`，属「引用本地模板」而非纯生成，不会触发转正提示。仅`main 现编、库里查无此名`的新角色才会触发。
+
 ## 角色模板库管理规则
 
 ### 模板格式定义
