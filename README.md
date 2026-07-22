@@ -96,18 +96,15 @@
 | 脚本 | 用途 |
 |---|---|
 | `growth_api.py` | 🆕 角色成长系统核心数据层（7个API：立场/关系/成就/标签/EXP/注入/备份） |
-| `growth_render.py` | 🆕 成长卡片渲染器（7段：等级→成就墙→成长树→职业事件→关系→统计→标签） |
+| `growth_tool.py` | 🆕 成长系统运维总入口（`backup`/`migrate`/`render`；原 growth_backup/migrate/render 合并） |
 | `role_export.py` | 🆕 角色集市导出/导入（脱敏处理） |
 | `discussion_archive.py` | 讨论归档至知识库 + 评分卡计算 + 成长数据自动更新 |
-| `growth_migrate.py` | 🆕 成长数据 Schema 迁移（v1→v2） |
-| `growth_backup.py` | 🆕 成长数据备份/还原（30份循环） |
+
 | `role_generate.py` | 基于问题关键词生成角色草稿卡 |
 | `role_validate.py` | 角色卡质量校验（必填字段+启发式风险检查） |
 | `role_test.py` | 角色 Spawn 测试（生成测试 Prompt） |
 | `tag_filter.py` | 角色标签筛选器（多条件 AND 匹配） |
-| `audit_docs.py` | 文档一致性审计（角色数/版本头/CHANGELOG/脚本完整性） |
-| `role_verify_alias.py` | QUESTION_TYPE_MAP 映射完整性校验 |
-| `audit_all.py` | 🆕 一键审计（依次跑 audit_docs + role_verify_alias，汇总 PASS/WARN；`--strict` 供 CI） |
+| `audit.py` | 🆕 文档/一致性审计总入口（`docs`/`alias`/`orphans`/`all`；原 audit_all/docs/orphans + role_verify_alias 合并） |
 
 ---
 
@@ -149,8 +146,8 @@
 
 ### 维护与审计
 
-1. 改完角色/规则/版本后，跑 `python scripts/audit_all.py` 做文档一致性 + 别名校验
-2. 成长数据在每次归档后由 `discussion_archive.py` 自动调用 `growth_api.auto_backup_if_needed()`（≥24h 一次，循环保留 `backup_keep_count` 份）；手动全量备份用 `python scripts/growth_backup.py --backup`，还原用 `--restore <file>`
+1. 改完角色/规则/版本后，跑 `python scripts/audit.py all` 做文档一致性 + 别名校验
+2. 成长数据在每次归档后由 `discussion_archive.py` 自动调用 `growth_api.auto_backup_if_needed()`（≥24h 一次，循环保留 `backup_keep_count` 份）；手动全量备份用 `python scripts/growth_tool.py backup --backup`，还原用 `backup --restore <file>`
 3. 导出/导入角色（角色集市）用 `python scripts/role_export.py <role_id>` / `--import-file <json>`
 4. 新角色转正前可用 `python scripts/role_test.py --role-card <card.json> --test-question "..."` 生成风格锁自检 prompt
 

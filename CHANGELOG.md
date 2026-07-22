@@ -1,5 +1,18 @@
 # 版本变更日志
 
+## v3.1.35 · discussion-examples.md 案例瘦身（2026-07-22）
+
+- **问题**：`references/discussion-examples.md` 达 84.7KB（references 最大文件），含 28 个 ## 段、19 个完整案例，其中虚构四连（一-四）、收敛对比（B/C）、插话机制（D/G 与 F 重叠）、角色验证五连（J-M 与 N 同构）存在大量冗余示范。
+- **瘦身**：删 10 个 ## 段（案例三/四/B/C/D/G/J/K/L/M），保留一/二/A/E/F/H/I/N/★/O + 3 边界 + 诊断全流程；体积 84.7KB → 51.2KB（−40%）。同步收敛 TOC、案例索引表、分类说明、实测对比表、角色验证汇总段；头部计数「19个」→「10个」；H/I 段内对 C/D 的对比提及保留（教学参照，非死链）。
+- **零断链**：案例A/F（rules-discussion.md 引用）、案例N（README/templates.md 引用）均保留；`audit_links.py` 复扫 exit 0（真死链 0）。
+
+## v3.1.34 · scripts 合并（audit_* / role_verify_alias / growth_*）（2026-07-22）
+
+- **合并**：① `audit_all.py` + `audit_docs.py` + `audit_orphans.py` + `role_verify_alias.py` → `audit.py`（子命令 `docs`/`alias`/`orphans`/`all`，`--strict` 供 CI）；② `growth_backup.py` + `growth_migrate.py` + `growth_render.py` → `growth_tool.py`（子命令 `backup`/`migrate`/`render`，业务逻辑仍复用 `growth_api.py`）。净减 5 个脚本（15→10）。
+- **依赖面核查**：`growth_api.py` 模块引用链、README 运维命令、SKILL.md 索引均同步更新；`role_generate.py` 的 `QUESTION_TYPE_MAP` 仅在模块级被 import，无文件级断链。
+- **link_audit 白名单扩展**：CHANGELOG 整文件内 `scripts/`、`references/` 引用统一豁免（历史变更流水，非活引用）；原 `split_skill.py` 单条豁免并入此规则。
+- **验证**：`audit.py all`/`docs`/`alias`/`orphans`、`growth_tool.py --help` 各子命令运行正常；`link_audit.py` 全仓复扫 exit 0（0 真死链，CHANGELOG 历史引用为常数级豁免）。
+
 ## v3.1.33 · 加固 role_verify_alias 常量抽取（2026-07-22）
 
 - **问题**：`role_verify_alias.py` 用正则 `re.search(r'QUESTION_TYPE_MAP\s*=\s*(\{.*?\})')` 从 `role_generate.py` 源码抽取字典再 `ast.literal_eval`。非贪婪匹配遇嵌套括号即截半崩溃，属脆弱解析。
