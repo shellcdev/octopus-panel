@@ -32,9 +32,11 @@ map_dict = ast.literal_eval(m.group(1))
 names = [n for vals in map_dict.values() for n in vals]
 
 # 模板库角色名集合：括号前全名 + 核心名
-full = re.findall(r'^###\s+\S+\s+([^\n（(]+)', tmpl, re.M)
+# 跳过格式示例占位行（如 '### [emoji] [角色名]（...）'）
+full = [n for n in re.findall(r'^###\s+\S+\s+([^\n（(]+)', tmpl, re.M)
+        if n and '[' not in n and '角色名' not in n]
 core = [s.split('（')[0].split('(')[0].strip()
-        for s in re.findall(r'^###\s+\S+\s+(\S+)', tmpl, re.M)]
+        for s in re.findall(r'^###\s+\S+\s+(\S+)', tmpl, re.M) if '[' not in s]
 tmpl_roles = set(full) | set(core)
 
 missing = [n for n in names if n not in tmpl_roles]

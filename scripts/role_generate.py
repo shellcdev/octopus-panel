@@ -97,7 +97,10 @@ def _load_local_roles():
         # 匹配 '### 🃏 赌徒（老六）' 这种标题行
         for m in re.finditer(r'^###\s+\S+\s+([^\n（(]+)', txt, re.M):
             nm = m.group(1).strip()
-            if nm and nm not in local:
+            # 跳过格式示例占位行（如 '### [emoji] [角色名]（...）'），避免混入垃圾角色
+            if not nm or '[' in nm or '角色名' in nm:
+                continue
+            if nm not in local:
                 local[nm] = {
                     'name': nm,
                     'archetype': '模板库角色',
