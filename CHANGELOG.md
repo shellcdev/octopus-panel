@@ -1,5 +1,19 @@
 # 版本变更日志
 
+## v3.1.16 · 调度三档 + 引用校验实装（2026-07-22）
+
+### 新增
+- **调度档位执行分支（schedule_mode 实装）**：SKILL.md 新增「🧩 调度档位执行分支」节，stable（真子 Agent 逐角色 spawn）/ balanced（复合 Prompt 单次模拟 + 虚拟隔离墙三技术：状态切换标记 / 负向约束注入 / 字数硬截断）/ auto（按议题复杂度选档，阈值 `schedule_auto_switch_threshold` 默认 0.7）；fast 并入 balanced，极速呈现由正交快速模式承担；硬规则 #11 约束选档
+- **cite_verify 引用校验实装**：SKILL.md 硬规则 #10 + references/templates.md「🔍 引用校验指令」节 + references/summary-format.md「未核验风险标注」节 + references/rules-discussion.md 白帽行标注
+
+### 配置
+- config.md `schedule_mode` 由 4 档改 3 档并标记已实装；`cite_verify` 标记已实装；新增 `schedule_auto_switch_threshold` 默认 0.7
+- config.md 版本 → v3.1.16
+
+### 提交
+- `3b52ee2`（commit + 推裸仓 main；与 v3.1 tag 同线）
+
+
 ## v3.1 · 格式统一（2026-06-12）
 
 ### 修复
