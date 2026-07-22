@@ -1,5 +1,11 @@
 # 版本变更日志
 
+## v3.1.29 · SKILL.md 补「角色来源」行为段（对齐 config + v2.0）（2026-07-22）
+
+- **缺口**：v3.1.27 仅在 config.md 还原了 `## 角色来源`（3 键），但 workspace SKILL.md 始终未描述 `role_source_mode` 如何驱动角色生成（v2.0 的 SKILL.md 有，workspace 重构时整段删了），且未指示调用读取该键的 `role_generate.py` → 配置/代码已生效，运行时行为说明断链。
+- **修复**：在 SKILL.md 步骤② 后插入「② 角色生成（受 config.md `role_source_mode` 控制）」段，描述 generate/local_priority/local_only 三模式 + 纯生成角色转正机制；转正链到 workspace 已有的「记住这个角色 → 写入 role-templates.md」（不引用 roles-rules.md 中不存在的「纯生成角色转正流程」子节，避免新断链）。
+- **验证**：SKILL.md 现含 `role_source_mode` 引用且指向 config.md `角色来源`；meta 头 + CHANGELOG 对齐 v3.1.29。
+
 ## v3.1.28 · 修复模板库占位行被误当角色（2026-07-22）
 
 - **缺陷**：`references/role-templates.md` 末尾格式示例占位头 `### [emoji] [角色名]（[职位/定位]）` 被 `role_generate.py` 与 `role_verify_alias.py` 当作真实角色解析，导致模板兜底候选池混入名为 `[角色名]` 的垃圾角色，且别名校验虚增计数（37→实为 36）。

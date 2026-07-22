@@ -1,4 +1,4 @@
-> 📌 版本：v3.1.28 | 更新：2026-07-22 | 维护者：石叔
+> 📌 版本：v3.1.29 | 更新：2026-07-22 | 维护者：石叔
 > 🔧 运行时路径配置：见 `config.md`，修改该文件即可自定义路径，无需改动 SKILL.md
 
 name: octopus-panel
@@ -66,6 +66,16 @@ description: 多角色圆桌讨论系统（八爪议事厅）。当用户提出�
     ↓
 ⑥ 归档（调用 discussion_archive.py，自动写入 {archive_dir}，即 octopus/archive/ 目录）
 ```
+
+### ② 角色生成（受 config.md `role_source_mode` 控制）
+
+石叔诊断完成后产出角色卡（4张，≤400字）。角色**从哪来**由 config.md `角色来源` 段的 `role_source_mode` 决定，脚本 `role_generate.py` 按该键实现以下三模式：
+
+- **`generate`（默认）**：每场纯动态生成，用完即丢弃，不查本地库、不注入成长、不累积 growth。脚本只产出「空壳」（名字与立场/风格锁/软肋均「待定」），由石叔按用户问题生成具体名字与实质属性；生成名字时须**主动避开 `role-templates.md` 本地角色名**（王经理/李阿姨/赌徒/冰…），防一次性幽灵角色与可复用本地角色撞名、混淆成长史。
+- **`local_priority`**：优先复用本地有成长史角色，不足再动态补；补的角色按 `pure_generated_handling`（`ask`/`no`）提示是否转正存库。
+- **`local_only`**：只从本地库挑，绝不现场造。
+
+> 纯生成角色转正：当 `role_generate.py` 判定某角色为库外纯生成（`pure_generated_handling=ask` 时标记 `suggest_localize` 并输出 `PROMPT:` 提示），石叔可经「记住这个角色」将其写入 `role-templates.md` 转正复用；未决前不 spawn 该角色。详见 `references/roles-rules.md`。
 
 ### ②.5 工具盘提示（石叔在②.5输出）
 
