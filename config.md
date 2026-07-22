@@ -43,21 +43,21 @@
 
 | 键 | 默认值 | 可选值 | 说明 |
 |---|---|---|---|
-| schedule_mode | balanced | auto / balanced / stable | 3档位调度模式（fast 已并入 balanced，省流由 balanced 承担，“快”由正交「快速模式」负责）：<br>• `auto`：石叔按议题复杂度自动选档（< `schedule_auto_switch_threshold` → balanced，≥ → stable）<br>• `balanced`（推荐）：复合 Prompt 单次模拟（虚拟分舱），Token 最高降 60%，保真度接近真子 Agent，日常 90% 场景首选<br>• `stable`：真子 Agent 全量执行，角色完全隔离，稳定性最高，适合复杂长议题/重要决策 |
+| schedule_mode | balanced | auto / balanced / stable | 3档位调度模式（fast 已并入 balanced，快结果由 balanced 承担，“更快”由正交「快速模式」负责）：<br>• `auto`：石叔按议题复杂度自动选档（< `schedule_auto_switch_threshold` → balanced，≥ → stable）<br>• `balanced`（推荐·默认快结果档）：石叔主上下文 inline 复合 Prompt 一次性模拟全部角色（不 spawn 子 agent），时延最低、保真度接近真子 Agent，默认 1 轮直出结论，日常 90% 场景首选<br>• `stable`：真子 Agent 全量执行，角色完全隔离，稳定性最高，适合复杂长议题/重要决策 |
 | schedule_auto_switch_threshold | 0.7 | 0-1 | auto 模式下自动切换到 stable 档位的复杂度阈值（议题复杂度 ≥ 该值时升级）；default 0.7 |
 
-> 实现状态：✅ 已实装。调度分支逻辑见 SKILL.md「🧩 调度档位执行分支」节（stable 逐角色 spawn / balanced 复合 Prompt 单次模拟 / auto 按复杂度选档）。
+> 实现状态：✅ 已实装。调度分支逻辑见 SKILL.md「🧩 调度档位执行分支」节（stable 逐角色 spawn / balanced 石叔 inline 复合 Prompt·结果优先·默认1轮 / auto 按复杂度选档）。
 
 ### 档位适配场景参考
-> 注：Token 消耗比例为**设计预期值，非实测**。脚本层不计量 token，无法验证是否精确达到；实际消耗随议题长度、轮次、角色数浮动。各档位的"降%声明"为上限估计（见 CHANGELOG）。调度档位与「快速模式」分属执行层/呈现层，可叠加。
+> 注：本表以**出结果时延**为轴（非 token）。调度档位与「快速模式」分属执行层/呈现层，可叠加；相对时延为设计估计，实际随议题长度、轮次、角色数浮动。
 
-| 档位 | Token消耗比例 | 适用场景 |
+| 档位 | 相对时延 | 适用场景 |
 |---|---|---|
 | auto | 动态 | 所有场景，自动适配 |
-| balanced | ≈40%（最高降60%） | 日常决策、普通讨论、中等复杂度议题（90%场景首选） |
-| stable | 100% | 复杂长议题、深度分析、重要决策场景 |
+| balanced | 最低（不建子会话、不回传重排） | 日常决策、普通讨论、中等复杂度议题（90%场景首选，默认1轮直出结论） |
+| stable | 最高 | 复杂长议题、深度分析、重要决策场景（长拉锯用真隔离更稳） |
 
-> 注：`fast` 不单列档——省流即 `balanced`，极速呈现由正交「快速模式」承担。
+> 注：`fast` 不单列档——快结果即 `balanced`，极速呈现由正交「快速模式」承担。
 
 ## 输出与校验
 
