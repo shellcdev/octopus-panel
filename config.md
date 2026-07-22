@@ -1,6 +1,6 @@
 # config.md · 八爪议事厅运行时配置
 
-> 📌 版本：v3.1.27 | 更新：2026-07-22 | 维护者：石叔
+> 📌 版本：v3.1.32 | 更新：2026-07-22 | 维护者：石叔
 >
 > 修改此文件即可自定义路径和偏好，无需改动 SKILL.md。
 > 路径支持绝对路径和相对于 workspace 根目录的相对路径。
@@ -109,8 +109,8 @@ SKILL.md 和子文件中遇到路径时，按以下规则解析：
 
 ```text
 workspace_root = ~/.qclaw/workspace
-→ octopus_dir = /home/user/.claw/workspace/memory/octopus
-→ growth_dir  = /home/user/.claw/workspace/memory/octopus/growth
+→ octopus_dir = /home/user/.qclaw/workspace/memory/octopus
+→ growth_dir  = /home/user/.qclaw/workspace/memory/octopus/growth
 ```
 
 **场景 2：关闭关系网络**（不采集、不展示、不留痕迹）

@@ -1,5 +1,10 @@
 # 版本变更日志
 
+## v3.1.32 · 修复 config.md 版本头漂移（2026-07-22）
+
+- **问题**：`audit_all` 报「是否全部一致: False / 与文件头版本一致: False」；根因是 config.md 在 v3.1.31 被改动（`workspace_root` 去硬编码 + 示例段）却漏 bump 版本头，停在 v3.1.27，而 SKILL/README/TODO/CHANGELOG 已是 v3.1.31。
+- **修复**：config.md 版本头 v3.1.27 → v3.1.32，并将 SKILL/README/TODO 元信息头统一对齐 v3.1.32（包级版本号），消除版本头不一致。
+
 ## v3.1.31 · workspace_root 去硬编码（跨机可移植）（2026-07-22）
 
 - **问题**：config.md `workspace_root` 硬编码绝对路径 `C:\Users\Shell\.qclaw\workspace`，提交即泄漏本机用户名，换机不可用。
