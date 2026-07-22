@@ -1,6 +1,6 @@
 # config.md · 八爪议事厅运行时配置
 
-> 📌 版本：v3.1.18 | 更新：2026-07-22 | 维护者：石叔
+> 📌 版本：v3.1.19 | 更新：2026-07-22 | 维护者：石叔
 >
 > 修改此文件即可自定义路径和偏好，无需改动 SKILL.md。
 > 路径支持绝对路径和相对于 workspace 根目录的相对路径。
@@ -46,7 +46,7 @@
 | schedule_mode | balanced | auto / balanced / stable | 3档位调度模式——**只控制是否使用子 agent 及如何使用**（fast 已并入 balanced，两者皆不 spawn，仅 spawn 行为不同；“更快”由正交「快速模式」负责）：<br>• `auto`：石叔按议题复杂度自动选档（< `schedule_auto_switch_threshold` → balanced，≥ → stable）<br>• `balanced`（推荐·默认档）：石叔主上下文 inline 复合 Prompt 一次性模拟全部角色（**不 spawn 子 agent**，spawn 行为即定义），保真度接近真子 Agent，默认 1 轮直出结论，日常 90% 场景首选<br>• `stable`：真子 Agent 全量执行（逐角色 spawn，完全隔离），稳定性最高，适合复杂长议题/重要决策 |
 | schedule_auto_switch_threshold | 0.7 | 0-1 | auto 模式下自动切换到 stable 档位的复杂度阈值（议题复杂度 ≥ 该值时升级）；default 0.7 |
 
-> 实现状态：✅ 已实装。调度分支逻辑见 SKILL.md「🧩 调度档位执行分支」节（stable 逐角色 spawn / balanced 石叔 inline 复合 Prompt·结果优先·默认1轮 / auto 按复杂度选档）。
+> 实现状态：✅ 已实装。调度分支逻辑见 SKILL.md「🧩 调度档位执行分支」节（stable 逐角色 spawn / balanced 石叔 inline 复合 Prompt·结果优先·轮次由收敛驱动 / auto 按复杂度选档）。
 
 ### 档位适配场景参考
 > 注：本表以 **spawn 行为**为轴（是否/如何使用子 agent）；相对时延为**派生效果**（不 spawn 则无会话创建/回传重排延迟），设计估计，实际随议题长度、轮次、角色数浮动。调度档位与「快速模式」分属执行层/呈现层，可叠加。
@@ -54,7 +54,7 @@
 | 档位 | spawn 行为（派生时延） | 适用场景 |
 |---|---|---|
 | auto | 动态 | 所有场景，自动适配 |
-| balanced | 不 spawn（无会话创建/回传重排延迟，派生时延最低） | 日常决策、普通讨论、中等复杂度议题（90%场景首选，默认1轮直出结论） |
+| balanced | 不 spawn（无会话创建/回传重排延迟，派生时延最低） | 日常决策、普通讨论、中等复杂度议题（90%场景首选，轮次由收敛驱动，无轮次上限） |
 | stable | 逐角色 spawn（有会话创建/回传重排延迟，派生时延最高） | 复杂长议题、深度分析、重要决策场景（长拉锯用真隔离更稳） |
 
 > 注：`fast` 不单列档——快结果即 `balanced`，极速呈现由正交「快速模式」承担。
