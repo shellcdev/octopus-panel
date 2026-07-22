@@ -1,16 +1,35 @@
 # 版本变更日志
 
+## v3.1.26 · scripts 命名规范化（2026-07-22）
+
+### 优化
+- scripts/ 命名统一为 `域_动词` 约定，消除混合风格与草稿散兵（全仓库 `git mv` 保留历史）：
+  - `scan_orphans.py` → `audit_orphans.py`（审计域前缀统一，与 audit_all/audit_docs 同族）
+  - `generate_roles.py` → `role_generate.py`、`export_role.py` → `role_export.py`、`validate_role.py` → `role_validate.py`、`verify_alias.py` → `role_verify_alias.py`、`role_tester.py` → `role_test.py`（角色域前缀前移 + `-er`→动词）
+  - `growth_renderer.py` → `growth_render.py`、`backup_growth_data.py` → `growth_backup.py`、`migrate_growth_data.py` → `growth_migrate.py`（成长域前缀前移 + 去冗余 `data`）
+  - `archive_discussion.py` → `discussion_archive.py`（讨论域前缀前移）
+- 清理草稿：`_verify.py`（未跟踪、零引用、无 `__main__`）从 scripts/ 删除
+- `growth_api.py` 为唯一 hub，保持不变；import / subprocess / 文档中所有旧名引用同步更新
+
+### 修复（重排中发现的真实 bug）
+- `growth_api.py` 补 `import re`：`_is_local_role_name` 用 `re.finditer`（L115）但此前漏导入，是潜在 NameError，借本次全量引用替换发现并修复
+
+### 验证
+- 全仓库旧名引用清零（`role_role_verify_alias` 双前缀已归一化）；`audit_orphans` 悬空引用 0
+- `audit_all` 仅余 `references/*` per-doc 版本 WARN（设计内，非缺陷）
+- 14 模块 import OK；`role_verify_alias` 校验 `QUESTION_TYPE_MAP`（27 角色）PASS
+
 ## v3.1.25 · 健壮性缺陷收口（2026-07-22）
 
 ### 修复
 - 🔴 **话题分类覆盖（P2）**：`_classify_topic` 类别集从 4 类扩到 8 类（对齐 role-templates 8 组角色），新增 `legal`/`medical`/`education`；`_CATEGORY_MATRIX` 同步补 3 行互相关性与既有 4 类映射。归档时 `topic` 改存**原文**（`args.question`）而非截断 slug，修复相关性权重对医疗/法务/教育及丢词讨论恒返 `general` 的退化（spawn 注入失准）。教育类置于 family 之前，避免「孩子升学」误归 family。
-- 🔴 **归档目录回退配置（P2）**：`archive_discussion.py --output` 缺省从相对 cwd 的 `memory/octopus-archive` 改为回退 `config.archive_dir`（保留显式 `--output` 覆盖），修复换 cwd 跑归档落到错误目录。
+- 🔴 **归档目录回退配置（P2）**：`discussion_archive.py --output` 缺省从相对 cwd 的 `memory/octopus-archive` 改为回退 `config.archive_dir`（保留显式 `--output` 覆盖），修复换 cwd 跑归档落到错误目录。
 - 🔴 **损坏 JSON 救援（P2）**：`_read_growth_record` 在 `JSONDecodeError` 分支先把损坏文件 `cp` 为 `.corrupt-<ts>.bak` 再返 `[]`，保留现场供 `restore_all`（原 read-modify-write 清空后才 backup，已不可逆）。
 - 🟡 **半角 [TAG] 正则（P3）**：`calc_role_differentiation` 半角分支 `$$` 误写为行尾锚点，改为 `\[`/`\]`，半角 `[TAG] NAME：` 日志现可正常抽取角色名。
-- 🟡 **UTF-8 重包装（P3）**：`tag_filter`/`growth_renderer`/`role_tester`/`archive_discussion` 头部补 `sys.stdout` UTF-8 重包装守卫（与另 5 脚本一致），防中文 Windows cp936 下 `print` CJK 崩溃。
+- 🟡 **UTF-8 重包装（P3）**：`tag_filter`/`growth_render`/`role_test`/`discussion_archive` 头部补 `sys.stdout` UTF-8 重包装守卫（与另 5 脚本一致），防中文 Windows cp936 下 `print` CJK 崩溃。
 
 ### 验证
-- `_classify_topic` 10/10 单测通过（含教育优先于家庭边界）；损坏备份探针生成 `.corrupt-*.bak`；audit_all/scan_orphans/verify_alias 无回归；5 模块 import OK。
+- `_classify_topic` 10/10 单测通过（含教育优先于家庭边界）；损坏备份探针生成 `.corrupt-*.bak`；audit_all/audit_orphans/role_verify_alias 无回归；5 模块 import OK。
 
 ## v3.1.24 · scripts 缺陷修复与去重（2026-07-22）
 
@@ -19,7 +38,7 @@
 - 角色数校正：声明「8组37个角色」→「8组36个角色」（role-templates.md:899 `### [emoji] [角色名]` 为格式说明行，非角色卡；audit_docs 一并排除该格式行）
 - 修审计误报：audit_all.py 新增捕获 `是否全部一致: False` 信号，不再误报 PASS
 - 悬空引用：补建 `references/role-templates-archive.md`（归档区）；CHANGELOG 标注 `scripts/split_skill.py` 未纳入版本管理
-- 重复代码下沉：本地角色判定统一到 `growth_api._is_local_role_name`（generate_roles / archive_discussion 共用）；删除 generate_roles 的死数据 `ROLE_ALIAS`，verify_alias.py 改为校验 `QUESTION_TYPE_MAP` 映射完整性
+- 重复代码下沉：本地角色判定统一到 `growth_api._is_local_role_name`（role_generate / discussion_archive 共用）；删除 role_generate 的死数据 `ROLE_ALIAS`，role_verify_alias.py 改为校验 `QUESTION_TYPE_MAP` 映射完整性
 
 ## v3.1.23 · 跨文档一致性修复（2026-07-22）
 
@@ -88,24 +107,24 @@
 
 | Phase | 提交 | 核心交付 |
 |-------|------|---------|
-| **Phase 0** 🏗️ | `f4310fc` | `growth_api.py` — 7个核心接口（立场履历/关系网络/成就/标签/EXP/注入/备份）+ `migrate_growth_data.py` + `backup_growth_data.py` + `config.md` 成长键 |
+| **Phase 0** 🏗️ | `f4310fc` | `growth_api.py` — 7个核心接口（立场履历/关系网络/成就/标签/EXP/注入/备份）+ `growth_migrate.py` + `growth_backup.py` + `config.md` 成长键 |
 | **Phase 1** 🚀 | `c6f320f` | 紧凑履历渲染 + spawn inject MVP（light 模式单条注入） |
 | **Phase 2** 🏷️ | `b36e9af` | 8个自动标签规则 + 议题相关度排序 + `auto-tag-rules.md` 规则库文档 |
-| **Phase 3** 🌳 | `a6256f4` | `growth_renderer.py` — 完整成长卡片（7段：等级→成就墙→成长树/心路→职业事件→关系网络→统计仪表盘→标签墙） |
+| **Phase 3** 🌳 | `a6256f4` | `growth_render.py` — 完整成长卡片（7段：等级→成就墙→成长树/心路→职业事件→关系网络→统计仪表盘→标签墙） |
 | **Phase 4** 🧠 | `64921bb` | deep 模式（top 3 注入 + 话题相关度矩阵 + 选择性遗忘）+ 影响力权重公式 |
-| **Phase 5** 🎉 | `33424f0` | `export_role.py` 角色集市（导出脱敏 + 导入重置 Lv.1）+ 生涯事件检测（6 种里程碑） |
+| **Phase 5** 🎉 | `33424f0` | `role_export.py` 角色集市（导出脱敏 + 导入重置 Lv.1）+ 生涯事件检测（6 种里程碑） |
 
 ### 新增文件
 - `scripts/growth_api.py`（975行，7个API）
-- `scripts/growth_renderer.py`（321行，7段渲染）
-- `scripts/export_role.py`（170行，集市I/O）
-- `scripts/migrate_growth_data.py`（130行，Schema迁移）
-- `scripts/backup_growth_data.py`（101行，备份/还原）
+- `scripts/growth_render.py`（321行，7段渲染）
+- `scripts/role_export.py`（170行，集市I/O）
+- `scripts/growth_migrate.py`（130行，Schema迁移）
+- `scripts/growth_backup.py`（101行，备份/还原）
 - `references/auto-tag-rules.md`（140行，8标签规则）
 - `references/growth-formula.md`（量化公式参考）
 
 ### 修改文件
-- `archive_discussion.py` — 集成成长更新、评分卡计算、备份触发
+- `discussion_archive.py` — 集成成长更新、评分卡计算、备份触发
 - `config.md` — 新增成长系统运行时键
 - `templates.md` — 角色卡注入立场历史
 - `SKILL.md` / `README.md` — 文件索引更新
@@ -139,7 +158,7 @@
 ### 新增
 - **六帽轮次滤镜**：讨论中可切换6顶思考帽子（白/红/黑/黄/绿/蓝）
 - **讨论质量评分卡**：5维评分（逻辑严谨性/立场一致性/证据充分性/建设性/共识推进）
-- 新增 `scripts/archive_discussion.py` 评分卡功能
+- 新增 `scripts/discussion_archive.py` 评分卡功能
 
 ### 关键设计
 - 蓝帽触发门槛：连续2轮触发（对齐系统检查节奏）
@@ -358,7 +377,7 @@
 - **量化判定标准**（立场对立公式/风格锁判定/角色质量自检）
 - **L1/L2/L3 错误恢复机制**
 - **讨论归档机制**
-- 4个辅助脚本（`generate_roles.py` / `validate_role.py` / `archive_discussion.py` / `role_tester.py`）
+- 4个辅助脚本（`role_generate.py` / `role_validate.py` / `discussion_archive.py` / `role_test.py`）
 - 所有 .md 文件加版本头
 
 ### 修复

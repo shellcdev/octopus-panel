@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# 校验 generate_roles.py 的 QUESTION_TYPE_MAP 中每个角色名是否都能在
+# 校验 role_generate.py 的 QUESTION_TYPE_MAP 中每个角色名是否都能在
 # role-templates.md 模板库中找到定义（检测悬空映射 / 拼写漂移）。
 # 替代原 ROLE_ALIAS 死数据校验（ROLE_ALIAS 已下沉移除）。
 
@@ -16,7 +16,7 @@ if sys.stdout.encoding != 'utf-8':
 
 SKILL_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FP_TMPL = os.path.join(SKILL_ROOT, 'references', 'role-templates.md')
-FP_GEN = os.path.join(SKILL_ROOT, 'scripts', 'generate_roles.py')
+FP_GEN = os.path.join(SKILL_ROOT, 'scripts', 'role_generate.py')
 
 with open(FP_TMPL, encoding='utf-8') as f:
     tmpl = f.read()
@@ -26,7 +26,7 @@ with open(FP_GEN, encoding='utf-8') as f:
 # 提取 QUESTION_TYPE_MAP 字典
 m = re.search(r'QUESTION_TYPE_MAP\s*=\s*(\{.*?\})', pycode, re.S)
 if not m:
-    print('❌ 未在 generate_roles.py 找到 QUESTION_TYPE_MAP')
+    print('❌ 未在 role_generate.py 找到 QUESTION_TYPE_MAP')
     sys.exit(1)
 map_dict = ast.literal_eval(m.group(1))
 names = [n for vals in map_dict.values() for n in vals]

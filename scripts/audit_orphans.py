@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-scan_orphans.py — 扫描 octopus-panel skill 的孤儿文件与悬空引用。
+audit_orphans.py — 扫描 octopus-panel skill 的孤儿文件与悬空引用。
 
 两类问题：
   1) 悬空引用 (dangling)：某文件引用了另一个路径，但该路径在 skill 树中不存在。
@@ -16,8 +16,8 @@ scan_orphans.py — 扫描 octopus-panel skill 的孤儿文件与悬空引用。
   - 忽略 http(s):// 等外链、以及 `本文件` 语境（不携带 .md token，天然不产生入链）。
 
 用法：
-  python scripts/scan_orphans.py            # 默认扫描脚本所在 skill 根
-  python scripts/scan_orphans.py <root>     # 指定根目录
+  python scripts/audit_orphans.py            # 默认扫描脚本所在 skill 根
+  python scripts/audit_orphans.py <root>     # 指定根目录
 """
 import pathlib
 import re

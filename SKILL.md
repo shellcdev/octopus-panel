@@ -1,4 +1,4 @@
-> 📌 版本：v3.1.25 | 更新：2026-07-22 | 维护者：石叔
+> 📌 版本：v3.1.26 | 更新：2026-07-22 | 维护者：石叔
 > 🔧 运行时路径配置：见 `config.md`，修改该文件即可自定义路径，无需改动 SKILL.md
 
 name: octopus-panel
@@ -64,7 +64,7 @@ description: 多角色圆桌讨论系统（八爪议事厅）。当用户提出�
     ↓
 ⑤ 石叔总结（六维框架 + ≤100字最终判断，格式见「石叔总结格式分档」章）
     ↓
-⑥ 归档（调用 archive_discussion.py，自动写入 {archive_dir}，即 octopus/archive/ 目录）
+⑥ 归档（调用 discussion_archive.py，自动写入 {archive_dir}，即 octopus/archive/ 目录）
 ```
 
 ### ②.5 工具盘提示（石叔在②.5输出）

@@ -39,7 +39,7 @@
   - 2 次 [让] → 30%
   - 5 次 [让] → 75%
   - 7 次 [让] → 100%（封顶）
-- **数据来源**：讨论板标签统计，`archive_discussion.py` 在归档时统计
+- **数据来源**：讨论板标签统计，`discussion_archive.py` 在归档时统计
 - **注意**：该标签需要讨论板标签解析支持，当前由手动归档时标注
 
 ### LV_MAO_KNIGHT · 绿帽骑士
@@ -103,7 +103,7 @@
 ### 自动更新
 
 `growth_api.update_auto_tags(role_id)` 在以下时机自动触发：
-1. 每次讨论归档后（由 `archive_discussion.py` 调用）
+1. 每次讨论归档后（由 `discussion_archive.py` 调用）
 2. 显式调用（如用户说"刷新角色标签"）
 
 ### 标签生命周期

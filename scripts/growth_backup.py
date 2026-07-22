@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-backup_growth_data.py - Growth data backup and restore
+growth_backup.py - Growth data backup and restore
 
 Usage:
-    python backup_growth_data.py --backup              # Create backup
-    python backup_growth_data.py --restore <file>       # Restore from backup
-    python backup_growth_data.py --list                 # List available backups
+    python growth_backup.py --backup              # Create backup
+    python growth_backup.py --restore <file>       # Restore from backup
+    python growth_backup.py --list                 # List available backups
 """
 
 import os
@@ -92,9 +92,9 @@ def main():
     # No args: show help
     parser.print_help()
     print('\nQuick usage:')
-    print('  python backup_growth_data.py --backup')
-    print('  python backup_growth_data.py --list')
-    print('  python backup_growth_data.py --restore growth_backups/20260609-1200.json')
+    print('  python growth_backup.py --backup')
+    print('  python growth_backup.py --list')
+    print('  python growth_backup.py --restore growth_backups/20260609-1200.json')
 
 
 if __name__ == '__main__':

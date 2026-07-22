@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-migrate_growth_data.py - Data schema migration for growth_record
+growth_migrate.py - Data schema migration for growth_record
 
 Usage:
-    python migrate_growth_data.py                        # Show current version
-    python migrate_growth_data.py --target 2              # Migrate to version 2
-    python migrate_growth_data.py --target 2 --dry-run    # Preview without writing
+    python growth_migrate.py                        # Show current version
+    python growth_migrate.py --target 2              # Migrate to version 2
+    python growth_migrate.py --target 2 --dry-run    # Preview without writing
 
 Migration history:
     version 1 → 2: Add career_events, achievements, auto_tags, manual_tags fields.
@@ -49,7 +49,7 @@ def main():
 
     if not args.target:
         print('\nNo --target specified. To migrate, run:')
-        print('  python migrate_growth_data.py --target {}'.format(current_ver + 1))
+        print('  python growth_migrate.py --target {}'.format(current_ver + 1))
         return
 
     if args.target <= current_ver:

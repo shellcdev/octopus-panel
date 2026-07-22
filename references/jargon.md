@@ -427,7 +427,7 @@
 独立于单场讨论的角色长期追踪系统。每场讨论结束→归档时自动更新角色成长数据→下场讨论自动注入立场历史。
 
 - **数据存储**：`memory/octopus/growth/` 下按 `role_id.json` 存储
-- **协同流程**：`archive_discussion.py` → `growth_api.py` 自动更新 → spawn 时注入
+- **协同流程**：`discussion_archive.py` → `growth_api.py` 自动更新 → spawn 时注入
 - **详见**：`references/growth-formula.md`（量化公式）、`references/auto-tag-rules.md`（标签规则）
 
 ### 立场履历
@@ -452,7 +452,7 @@ level = floor(exp / 200) + 1
 
 ### 成长卡
 
-`growth_renderer.py` 渲染的完整角色成长可视化，7段结构：
+`growth_render.py` 渲染的完整角色成长可视化，7段结构：
 
 1. 等级/场次/经验 基本信息
 2. 成就墙（🏆）
@@ -504,7 +504,7 @@ weight = 0.3 + 话题相关度×0.35 + (历史评分/100)×0.2 + 时效加分
 
 ### 角色集市
 
-`export_role.py` 导出/导入角色卡，支持跨项目分享。
+`role_export.py` 导出/导入角色卡，支持跨项目分享。
 
 - **导出**：脱敏处理（去除内部ID/路径），保留 EXP/等级/成就/标签
 - **导入**：重置为 Lv.1，重建成长数据（历史不可转让）

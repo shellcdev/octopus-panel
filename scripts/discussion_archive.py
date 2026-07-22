@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-archive_discussion.py - discussion archive to knowledge base (enhanced v2.2)
+discussion_archive.py - discussion archive to knowledge base (enhanced v2.2)
 New: #34 Discussion Quality Scorecard - auto-calculate 5-dimension score
 New: Phase 0-5 - integrated with growth_api.py for role growth tracking + career events
 """

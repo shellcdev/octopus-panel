@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- coding: utf-8 -*-
 """
-role_tester.py - spawn 单角色测试发言是否符合风格锁
-用法：python role_tester.py --role-card role_card.json --test-question "..." --model qclaw/modelroute
+role_test.py - spawn 单角色测试发言是否符合风格锁
+用法：python role_test.py --role-card role_card.json --test-question "..." --model qclaw/modelroute
 需要 OpenClaw sessions_spawn 支持（本脚本生成测试 prompt，人工或自动化执行）
 """
 

@@ -3,7 +3,7 @@
 growth_api.py - Role Growth System API (Phase 0)
 
 Central interface for all growth_record read/write operations.
-Other modules (archive_discussion.py, growth_renderer.py, etc.) MUST
+Other modules (discussion_archive.py, growth_render.py, etc.) MUST
 go through this API instead of accessing growth_record directly.
 
 Lifecycle:
@@ -23,6 +23,7 @@ Session override:
 """
 
 import os
+import re
 import json
 import codecs
 import datetime
@@ -600,7 +601,7 @@ def upsert_role(role_dict):
     return True
 
 
-# ─── Topic classification (shared with archive_discussion.py) ───
+# ─── Topic classification (shared with discussion_archive.py) ───
 
 def _classify_topic(topic):
     """Classify a topic string into a category for relevance matching.
@@ -983,7 +984,7 @@ _last_backup_time = None
 def auto_backup_if_needed():
     """
     Check if auto-backup is needed (≥24h since last backup).
-    Called by archive_discussion.py after each archive.
+    Called by discussion_archive.py after each archive.
     """
     global _last_backup_time
     now = datetime.datetime.now()
@@ -1015,7 +1016,7 @@ def auto_backup_if_needed():
 def migrate_schema(target_version=None):
     """
     Migrate growth_record to target schema version.
-    Called by migrate_growth_data.py.
+    Called by growth_migrate.py.
 
     Returns (current_version, target_version, migrated_count).
     """

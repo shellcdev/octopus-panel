@@ -84,25 +84,25 @@ if os.path.exists(cl_fp):
         first_ver = list(existing_versions.values())[0]
         print(f'  与文件头版本一致: {cl_ver == first_ver}')
 
-# 5. generate_roles.py 的 QUESTION_TYPE_MAP 角色数
-FP3 = os.path.join(SCRIPTS_DIR, 'generate_roles.py')
+# 5. role_generate.py 的 QUESTION_TYPE_MAP 角色数
+FP3 = os.path.join(SCRIPTS_DIR, 'role_generate.py')
 if os.path.exists(FP3):
     with open(FP3, encoding='utf-8') as f:
         pycode = f.read()
     map_roles = re.findall(r'"([^"]+)"', pycode.split('QUESTION_TYPE_MAP')[1].split('}')[0])
-    print(f'\n=== generate_roles.py QUESTION_TYPE_MAP ===')
+    print(f'\n=== role_generate.py QUESTION_TYPE_MAP ===')
     print(f'映射角色数: {len(map_roles)}')
     missing = [r for r in map_roles if r not in content]
     print(f'role-templates.md 中缺失: {missing if missing else "无"}')
     extra = [r for r in real_roles if not any(m in r for m in map_roles)]
     print(f'映射中未覆盖的模板角色(本地库角色,可忽略): {extra if extra else "无"}')
 else:
-    print(f'\n=== generate_roles.py === 不存在，跳过')
+    print(f'\n=== role_generate.py === 不存在，跳过')
 
 # 6. scripts/ 目录完整性
 print(f'\n=== scripts/ 目录完整性 ===')
-expected_scripts = ['archive_discussion.py', 'generate_roles.py', 'tag_filter.py',
-                    'validate_role.py']
+expected_scripts = ['discussion_archive.py', 'role_generate.py', 'tag_filter.py',
+                    'role_validate.py']
 for s in expected_scripts:
     exists = os.path.exists(os.path.join(SCRIPTS_DIR, s))
     print(f'  {s}: {"✅" if exists else "❌ 缺失"}')

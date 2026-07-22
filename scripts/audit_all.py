@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-audit_all.py - 一键文档一致性审计（audit_docs + verify_alias）
+audit_all.py - 一键文档一致性审计（audit_docs + role_verify_alias）
 用法：
     python audit_all.py            # 跑审计 + 别名校验
     python audit_all.py --strict   # 任一告警即非零退出（适合 CI / pre-commit）
 
 输出：汇总两脚本结果，末尾给 PASS / WARN 结论。
-依赖：scripts/audit_docs.py, scripts/verify_alias.py（同目录）
+依赖：scripts/audit_docs.py, scripts/role_verify_alias.py（同目录）
 """
 import os
 import sys
@@ -57,9 +57,9 @@ def main():
             elif ('缺失' in line) and ('缺失: 无' not in line) and ('缺失：无' not in line):
                 warn_audit.append(line.strip())
 
-    # 2) verify_alias.py
-    print('\n--- [2/2] 别名映射校验 (verify_alias.py) ---')
-    rc2, out2 = _run('verify_alias.py')
+    # 2) role_verify_alias.py
+    print('\n--- [2/2] 别名映射校验 (role_verify_alias.py) ---')
+    rc2, out2 = _run('role_verify_alias.py')
     if out2:
         print(out2)
     warn_alias = []

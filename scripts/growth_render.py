@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-growth_renderer.py - Full profile renderer for role growth (Phase 3)
+growth_render.py - Full profile renderer for role growth (Phase 3)
 
 Generates markdown text for the complete role growth card display.
 Called when user requests "完整档" (full profile) for a role.

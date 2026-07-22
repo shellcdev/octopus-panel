@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-validate_role.py - 角色卡质量校验（自动过前置风控三问）
-用法：python validate_role.py --file role_card.json
-      python validate_role.py --dir roles/  （批量校验目录下所有.json）
+role_validate.py - 角色卡质量校验（自动过前置风控三问）
+用法：python role_validate.py --file role_card.json
+      python role_validate.py --dir roles/  （批量校验目录下所有.json）
 """
 
 import argparse

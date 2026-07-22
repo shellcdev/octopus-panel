@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-export_role.py - Export/import role growth data for the role marketplace
+role_export.py - Export/import role growth data for the role marketplace
 
 Usage:
-    python export_role.py <role_id>                      # Export to stdout
-    python export_role.py <role_id> --output <file.json>  # Export to file
-    python export_role.py --import <file.json>             # Import a role
+    python role_export.py <role_id>                      # Export to stdout
+    python role_export.py <role_id> --output <file.json>  # Export to file
+    python role_export.py --import <file.json>             # Import a role
 
 Export format:
     - Stance history: preserved as background story (topics stripped)
@@ -142,9 +142,9 @@ def main():
     if not args.role_id:
         parser.print_help()
         print('\nQuick usage:')
-        print('  python export_role.py 赌徒')
-        print('  python export_role.py 赌徒 --output role_export.json')
-        print('  python export_role.py --import-file role_export.json')
+        print('  python role_export.py 赌徒')
+        print('  python role_export.py 赌徒 --output role_export.json')
+        print('  python role_export.py --import-file role_export.json')
         return
 
     export = export_role(args.role_id)
