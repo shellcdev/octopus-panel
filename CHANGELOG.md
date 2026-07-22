@@ -1,5 +1,17 @@
 # 版本变更日志
 
+## v3.1.25 · 健壮性缺陷收口（2026-07-22）
+
+### 修复
+- 🔴 **话题分类覆盖（P2）**：`_classify_topic` 类别集从 4 类扩到 8 类（对齐 role-templates 8 组角色），新增 `legal`/`medical`/`education`；`_CATEGORY_MATRIX` 同步补 3 行互相关性与既有 4 类映射。归档时 `topic` 改存**原文**（`args.question`）而非截断 slug，修复相关性权重对医疗/法务/教育及丢词讨论恒返 `general` 的退化（spawn 注入失准）。教育类置于 family 之前，避免「孩子升学」误归 family。
+- 🔴 **归档目录回退配置（P2）**：`archive_discussion.py --output` 缺省从相对 cwd 的 `memory/octopus-archive` 改为回退 `config.archive_dir`（保留显式 `--output` 覆盖），修复换 cwd 跑归档落到错误目录。
+- 🔴 **损坏 JSON 救援（P2）**：`_read_growth_record` 在 `JSONDecodeError` 分支先把损坏文件 `cp` 为 `.corrupt-<ts>.bak` 再返 `[]`，保留现场供 `restore_all`（原 read-modify-write 清空后才 backup，已不可逆）。
+- 🟡 **半角 [TAG] 正则（P3）**：`calc_role_differentiation` 半角分支 `$$` 误写为行尾锚点，改为 `\[`/`\]`，半角 `[TAG] NAME：` 日志现可正常抽取角色名。
+- 🟡 **UTF-8 重包装（P3）**：`tag_filter`/`growth_renderer`/`role_tester`/`archive_discussion` 头部补 `sys.stdout` UTF-8 重包装守卫（与另 5 脚本一致），防中文 Windows cp936 下 `print` CJK 崩溃。
+
+### 验证
+- `_classify_topic` 10/10 单测通过（含教育优先于家庭边界）；损坏备份探针生成 `.corrupt-*.bak`；audit_all/scan_orphans/verify_alias 无回归；5 模块 import OK。
+
 ## v3.1.24 · scripts 缺陷修复与去重（2026-07-22）
 
 ### 修复

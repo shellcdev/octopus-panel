@@ -9,6 +9,12 @@ role_tester.py - spawn 单角色测试发言是否符合风格锁
 import argparse
 import json
 import codecs
+import sys
+import io
+
+# UTF-8 重包装：中文 Windows (cp936) 下 print CJK 可能 UnicodeEncodeError
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 def build_test_prompt(role_card, test_question, round_num=1):
     """构建测试 prompt（发给子 Agent）"""

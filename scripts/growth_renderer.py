@@ -18,6 +18,11 @@ Dependencies: growth_api.py (must be in same directory)
 
 import os
 import sys
+import io
+
+# UTF-8 重包装：中文 Windows (cp936) 下 print CJK 可能 UnicodeEncodeError
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 _scripts_dir = os.path.dirname(os.path.abspath(__file__))
 if _scripts_dir not in sys.path:

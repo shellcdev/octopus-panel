@@ -148,6 +148,12 @@ def _read_growth_record():
             return data.get('roles', [])
         return data
     except (json.JSONDecodeError, ValueError):
+        # 损坏救援：先保留现场再返回空，避免 _write 清空后无备份可恢复
+        try:
+            _bak = fp + '.corrupt-' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+            shutil.copy2(fp, _bak)
+        except Exception:
+            pass
         return []
 
 
@@ -597,7 +603,11 @@ def upsert_role(role_dict):
 # ─── Topic classification (shared with archive_discussion.py) ───
 
 def _classify_topic(topic):
-    """Classify a topic string into a category for relevance matching."""
+    """Classify a topic string into a category for relevance matching.
+
+    类别集须与 role-templates.md 的角色分组对齐（8 组）：
+    financial / career / family / technical / legal / medical / education / general
+    """
     if not topic:
         return 'general'
     t = topic.lower()
@@ -605,21 +615,38 @@ def _classify_topic(topic):
         return 'financial'
     if any(w in t for w in ['辞职', '创业', '工作', '跳槽', '加薪', '面试', '升职', '转行']):
         return 'career'
-    if any(w in t for w in ['结婚', '离婚', '出轨', '育儿', '孩子', '父母', '家庭', '生子', '感情']):
-        return 'family'
     if any(w in t for w in ['技术', '架构', '选型', '框架', '代码', '开发', '部署', '上线']):
         return 'technical'
+    # 法务 / 知识产权（对齐 role-templates 法律风控组）
+    if any(w in t for w in ['版权', '著作', '专利', '商标', '合同', '法律', '合规',
+                            '诉讼', '法务', '侵权', '隐私', '数据合规', '维权的', '仲裁']):
+        return 'legal'
+    # 医疗 / 健康（对齐 role-templates 医疗决策组）
+    if any(w in t for w in ['病', '医', '健康', '医保', '诊断', '治疗', '药', '疫苗',
+                            '养生', '心理', '体检', '手术', '门诊']):
+        return 'medical'
+    # 教育 / 升学（对齐 role-templates 教育规划组）
+    # 须放在 family 之前：'孩子升学/择校' 同时含 '孩子'(family) 与 '升学'(education)，
+    # 教育意图更强，应优先归 education。
+    if any(w in t for w in ['教育', '升学', '留学', '考试', '择校', '辅导', '培训',
+                            '考研', '高考', '学区', '孩子学习']):
+        return 'education'
+    if any(w in t for w in ['结婚', '离婚', '出轨', '育儿', '孩子', '父母', '家庭', '生子', '感情']):
+        return 'family'
     return 'general'
 
 
 # Category relevance matrix: how relevant an old topic category is to the current one.
 # Used by _influence_weight() as the primary "which stance is worth injecting" signal.
 _CATEGORY_MATRIX = {
-    'career': {'career': 1.0, 'financial': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
-    'financial': {'financial': 1.0, 'career': 0.7, 'family': 0.3, 'technical': 0.3, 'general': 0.5},
-    'family': {'family': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'technical': 0.1},
-    'technical': {'technical': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'family': 0.1},
-    'general': {'general': 0.5, 'career': 0.5, 'financial': 0.5, 'family': 0.5, 'technical': 0.5},
+    'career':    {'career': 1.0, 'financial': 0.7, 'family': 0.3, 'technical': 0.3, 'legal': 0.3, 'medical': 0.2, 'education': 0.3, 'general': 0.5},
+    'financial': {'financial': 1.0, 'career': 0.7, 'family': 0.3, 'technical': 0.3, 'legal': 0.5, 'medical': 0.2, 'education': 0.2, 'general': 0.5},
+    'family':    {'family': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'technical': 0.1, 'legal': 0.3, 'medical': 0.4, 'education': 0.5},
+    'technical': {'technical': 1.0, 'career': 0.3, 'financial': 0.3, 'general': 0.5, 'family': 0.1, 'legal': 0.2, 'medical': 0.1, 'education': 0.2},
+    'legal':     {'legal': 1.0, 'financial': 0.5, 'family': 0.3, 'career': 0.3, 'technical': 0.2, 'medical': 0.4, 'education': 0.3, 'general': 0.5},
+    'medical':   {'medical': 1.0, 'family': 0.4, 'legal': 0.4, 'financial': 0.2, 'career': 0.2, 'technical': 0.1, 'education': 0.3, 'general': 0.5},
+    'education': {'education': 1.0, 'family': 0.5, 'career': 0.3, 'legal': 0.3, 'financial': 0.2, 'technical': 0.2, 'medical': 0.3, 'general': 0.5},
+    'general':   {'general': 0.5, 'career': 0.5, 'financial': 0.5, 'family': 0.5, 'technical': 0.5, 'legal': 0.5, 'medical': 0.5, 'education': 0.5},
 }
 
 

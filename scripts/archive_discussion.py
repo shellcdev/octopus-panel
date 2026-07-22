@@ -7,11 +7,16 @@ New: Phase 0-5 - integrated with growth_api.py for role growth tracking + career
 
 import os
 import sys
+import io
 import codecs
 import json
 import argparse
 import datetime
 import re
+
+# UTF-8 重包装：中文 Windows (cp936) 下 print CJK 可能 UnicodeEncodeError
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 # Ensure scripts directory is in path for growth_api import
 _scripts_dir = os.path.dirname(os.path.abspath(__file__))
@@ -220,7 +225,7 @@ def calc_role_differentiation(log_content):
     names = set()
     for line in log_content.split('\n'):
         # Half-width: [TAG] NAME：
-        m = re.match(r'$$[^$$]+$$\s*([\u4e00-\u9fff]{2,6})\s*[：:]', line)
+        m = re.match(r'\[[^\]]+\]\s*([\u4e00-\u9fff]{2,6})\s*[：:]', line)
         if m:
             names.add(m.group(1))
             continue
@@ -449,16 +454,18 @@ def main():
     parser.add_argument('--conclusion', required=True, help='Shishu summary conclusion')
     parser.add_argument('--roles', help='Role lineup JSON file path')
     parser.add_argument('--log', help='Full discussion log file path (optional)')
-    parser.add_argument('--output', default='memory/octopus-archive', help='Archive output directory')
+    parser.add_argument('--output', default=None, help='Archive output directory (default: config archive_dir)')
     parser.add_argument('--consensus-history', help='Consensus history JSON, e.g. "[[1,25],[2,40]]"')
     parser.add_argument('--no-score', action='store_true', help='Skip scorecard generation')
     args = parser.parse_args()
 
-    os.makedirs(args.output, exist_ok=True)
+    # 归档目录：未显式传 --output 时回退 config archive_dir（修复无视配置的旧默认相对 cwd 行为）
+    out_dir = args.output or growth_api._get_config('archive_dir')
+    os.makedirs(out_dir, exist_ok=True)
     timestamp = datetime.datetime.now()
     timestamp_iso = timestamp.strftime('%Y-%m-%d %H:%M')
     filename = timestamp.strftime('%Y%m%d-%H%M') + '.md'
-    filepath = os.path.join(args.output, filename)
+    filepath = os.path.join(out_dir, filename)
 
     # topic slug for growth session_id / stance topic (capped at topic_slug_length, <= not fixed)
     _cap = int(growth_api._get_config('topic_slug_length', '6'))
@@ -468,7 +475,7 @@ def main():
 
     # archive filename: YYYYMMDD-{slug}.md (date-first for natural time sort)
     filename = timestamp.strftime('%Y%m%d') + '-' + _slug + '.md'
-    filepath = os.path.join(args.output, filename)
+    filepath = os.path.join(out_dir, filename)
 
     roles = []
     if args.roles:
@@ -508,7 +515,7 @@ def main():
             log_content, consensus_history, args.conclusion)
         print('Scorecard: {} points ({} grade)'.format(composite, grade))
 
-    related = find_related_archives(args.question, args.output)
+    related = find_related_archives(args.question, out_dir)
     content = build_archive_content(
         args.question, args.conclusion, roles, timestamp_iso,
         log_content, related, scorecard_text)
@@ -548,7 +555,7 @@ def main():
             growth_api.update_stance_history(
                 role_id=rname,
                 session_id=session_id,
-                topic=q_topic[0] if q_topic else args.question[:20],
+                topic=args.question,  # 存原文供 _classify_topic 分类（覆盖 8 组角色，slug 会丢词）
                 stance=rstance,
                 score=composite if not args.no_score else None,
             )

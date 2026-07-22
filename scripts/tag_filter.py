@@ -8,6 +8,11 @@
 import re
 import sys
 import os
+import io
+
+# UTF-8 重包装：中文 Windows (cp936) 下 print CJK 可能 UnicodeEncodeError
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_FILE = os.path.join(SCRIPT_DIR, '..', 'references', 'role-templates.md')
