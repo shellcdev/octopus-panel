@@ -147,6 +147,7 @@
 ### 维护与审计
 
 1. 改完角色/规则/版本后，跑 `python scripts/audit.py all` 做文档一致性 + 别名校验
+1. 改动/增删 `scripts/` 或 `references/` 内文件后，跑 `python scripts/audit_links.py` 复扫链接健康（0 真死链才算通过，CHANGELOG 历史引用为合规豁免）；改了文件名务必同步更新 README 脚本表与 SKILL.md 索引
 2. 成长数据在每次归档后由 `discussion_archive.py` 自动调用 `growth_api.auto_backup_if_needed()`（≥24h 一次，循环保留 `backup_keep_count` 份）；手动全量备份用 `python scripts/growth_tool.py backup --backup`，还原用 `backup --restore <file>`
 3. 导出/导入角色（角色集市）用 `python scripts/role_export.py <role_id>` / `--import-file <json>`
 4. 新角色转正前可用 `python scripts/role_test.py --role-card <card.json> --test-question "..."` 生成风格锁自检 prompt
