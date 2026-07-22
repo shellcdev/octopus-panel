@@ -9,7 +9,7 @@
 
 | 键 | 默认值 | 说明 |
 |---|---|---|
-| `workspace_root` | C:\Users\Shell\.qclaw\workspace | OpenClaw workspace 根目录 |
+| `workspace_root` | ~/.qclaw/workspace | OpenClaw workspace 根目录（~ 自动展开为当前用户家目录，跨机可移植，勿硬编码绝对路径）|
 | `user_md` | `{workspace_root}\USER.md` | 用户偏好存储文件 |
 | `octopus_dir` | `{workspace_root}\memory\octopus` | 八爪议事厅数据根目录 |
 | `growth_dir` | `{octopus_dir}\growth` | 角色成长数据目录（JSON 结构化数据） |
@@ -108,7 +108,7 @@ SKILL.md 和子文件中遇到路径时，按以下规则解析：
 只改 `workspace_root` 一行，其余路径自动跟随：
 
 ```text
-workspace_root = /home/user/.claw/workspace
+workspace_root = ~/.qclaw/workspace
 → octopus_dir = /home/user/.claw/workspace/memory/octopus
 → growth_dir  = /home/user/.claw/workspace/memory/octopus/growth
 ```

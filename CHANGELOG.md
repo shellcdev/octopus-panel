@@ -1,5 +1,12 @@
 # 版本变更日志
 
+## v3.1.31 · workspace_root 去硬编码（跨机可移植）（2026-07-22）
+
+- **问题**：config.md `workspace_root` 硬编码绝对路径 `C:\Users\Shell\.qclaw\workspace`，提交即泄漏本机用户名，换机不可用。
+- **修复**：① `scripts/growth_api.py` 解析循环在剥反引号后增加 `val = os.path.expanduser(val)`，使 config 值中的 `~` 展开为用户家目录（代码默认 `expanduser('~/.qclaw/workspace')` 本就可移植，但 config 有该行时默认不生效，故需解析器支持）；② config.md `workspace_root` 单元格改为 `~/.qclaw/workspace`，示例段 `/home/user/.claw/workspace` 同步改为 `~/.qclaw/workspace`（顺带修正 `.claw`→`.qclaw` 漂移）。
+- **验证**：`growth_api._get_config('workspace_root')` → `C:\Users\Shell/.qclaw/workspace`，`growth_dir`/`archive_dir` 解析为真实存在目录；本机行为不变、去除用户名硬编码；`audit_orphans` 0 悬空 0 孤儿。
+- meta 头 SKILL/README/TODO → v3.1.31。
+
 ## v3.1.30 · 补全角色来源硬约束（硬性规则12 + 转正流程段）（2026-07-22）
 
 - SKILL.md 新增「硬性规则 12 · 角色来源走脚本」：诊断后**必须调用 `role_generate.py`** 产出角色、不得手编角色名；`PROMPT:` 行触发转正决策、未决前不 spawn。补全 v3.1.29「② 角色生成」段未覆盖的硬约束（移植自 v2.0 副本）

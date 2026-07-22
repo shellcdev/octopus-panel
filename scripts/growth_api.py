@@ -53,6 +53,8 @@ def _load_config():
                         # 否则 key 带反引号导致跨键引用替换失败、默认值覆盖，换机器改 config 无效
                         key = parts[1].strip('`')
                         val = parts[2].strip('`')
+                        # 展开 ~ 为用户家目录，使 workspace_root 等路径跨机可移植（不再硬编码用户名/绝对路径）
+                        val = os.path.expanduser(val)
                         # Resolve {CLAW_ROOT} env placeholder first
                         _claw_root = os.environ.get('CLAW_ROOT', '')
                         if '{CLAW_ROOT}' in val and _claw_root:
