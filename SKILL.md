@@ -4,7 +4,7 @@
 ---
 author: 石叔
 license: MIT
-repository: https://github.com/石叔/octopus-panel
+repository: https://github.com/shellcdev/octopus-panel
 ---
 
 name: octopus-panel
