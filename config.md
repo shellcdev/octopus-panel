@@ -1,6 +1,6 @@
 # config.md · 八爪议事厅运行时配置
 
-> 📌 版本：v3.1.33 | 更新：2026-07-22 | 维护者：石叔
+> 📌 版本：v3.1.37 | 更新：2026-07-22 | 维护者：石叔
 >
 > 修改此文件即可自定义路径和偏好，无需改动 SKILL.md。
 > 路径支持绝对路径和相对于 workspace 根目录的相对路径。
@@ -9,7 +9,7 @@
 
 | 键 | 默认值 | 说明 |
 |---|---|---|
-| `workspace_root` | ~/.qclaw/workspace | OpenClaw workspace 根目录（~ 自动展开为当前用户家目录，跨机可移植，勿硬编码绝对路径）|
+| `workspace_root` | `{WORKSPACE_ROOT}` | 工作区根目录。由脚本从自身位置反推（无需任何环境变量，QClaw 云端/本地 OpenClaw 均指向 `<.qclaw>/workspace`，数据随技能走，勿硬编码绝对路径）。`{CLAW_ROOT}` 仍兼容（仅本地 OpenClaw Gateway 用户 .env 设置时生效）|
 | `user_md` | `{workspace_root}\USER.md` | 用户偏好存储文件 |
 | `octopus_dir` | `{workspace_root}\memory\octopus` | 八爪议事厅数据根目录 |
 | `growth_dir` | `{octopus_dir}\growth` | 角色成长数据目录（JSON 结构化数据） |
@@ -62,7 +62,7 @@
 
 | 键 | 默认值 | 可选值 | 说明 |
 |---|---|---|---|
-| `schedule_mode` | `balanced` | `auto` / `balanced` / `stable` | 3 档位调度开关——**只控制是否/如何使用子 agent**；"更快"由正交「快速模式」负责，各档 spawn 行为与适用场景见下方「档位适配场景参考」 |
+| `schedule_mode` | `stable` | `auto` / `balanced` / `stable` | 3 档位调度开关——**只控制是否/如何使用子 agent**；"更快"由正交「快速模式」负责，各档 spawn 行为与适用场景见下方「档位适配场景参考」 |
 | `schedule_auto_switch_threshold` | `0.7` | `0`–`1` | `auto` 模式下升级到 `stable` 的复杂度阈值（议题复杂度 ≥ 该值时升级） |
 
 > 实现状态：✅ 已实装。调度分支逻辑见 SKILL.md「🧩 调度档位执行分支」节（`stable` 逐角色 spawn / `balanced` 石叔 inline 复合 Prompt·结果优先·轮次由收敛驱动 / `auto` 按复杂度选档）。
@@ -108,7 +108,7 @@ SKILL.md 和子文件中遇到路径时，按以下规则解析：
 只改 `workspace_root` 一行，其余路径自动跟随：
 
 ```text
-workspace_root = ~/.qclaw/workspace
+workspace_root = {WORKSPACE_ROOT}
 → octopus_dir = /home/user/.qclaw/workspace/memory/octopus
 → growth_dir  = /home/user/.qclaw/workspace/memory/octopus/growth
 ```

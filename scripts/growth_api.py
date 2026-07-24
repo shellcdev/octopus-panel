@@ -34,6 +34,21 @@ from copy import deepcopy
 
 _CONFIG_CACHE = None
 
+def _workspace_root():
+    """由本脚本位置反推 .qclaw 根目录（portable，不依赖任何环境变量）。
+
+    脚本路径: <root>/.qclaw/skills/assist-Z-octopus-panel/scripts/growth_api.py
+    上溯 4 层: scripts -> assist-Z-octopus-panel -> skills -> .qclaw
+    返回 .qclaw 父目录；数据落 <root>/.qclaw/workspace（保留原结构，仅去除 ~ 硬编码）。
+    QClaw 云端与本地 OpenClaw 下均指向技能自己的工作区，数据随技能走。
+    """
+    here = os.path.abspath(__file__)
+    root = os.path.dirname(here)   # scripts/
+    root = os.path.dirname(root)   # assist-Z-octopus-panel/
+    root = os.path.dirname(root)   # skills/
+    root = os.path.dirname(root)   # .qclaw 根
+    return root
+
 def _load_config():
     """Parse config.md and return a dict of key-value pairs."""
     global _CONFIG_CACHE
@@ -53,12 +68,18 @@ def _load_config():
                         # 否则 key 带反引号导致跨键引用替换失败、默认值覆盖，换机器改 config 无效
                         key = parts[1].strip('`')
                         val = parts[2].strip('`')
-                        # 展开 ~ 为用户家目录，使 workspace_root 等路径跨机可移植（不再硬编码用户名/绝对路径）
+                        # 展开 ~ 为用户家目录（保留以备本地裸跑路径含 ~ 的场景）
                         val = os.path.expanduser(val)
-                        # Resolve {CLAW_ROOT} env placeholder first
+                        # 工作区根：由脚本位置反推，跨平台可移植，不依赖任何环境变量
+                        _ws_root = _workspace_root()
+                        _workspace = os.path.join(_ws_root, 'workspace')
+                        # Resolve {WORKSPACE_ROOT} 占位符（首选，便携式）→ <root>/.qclaw/workspace
+                        if '{WORKSPACE_ROOT}' in val:
+                            val = val.replace('{WORKSPACE_ROOT}', _workspace)
+                        # Resolve {CLAW_ROOT} 占位符（本地 OpenClaw Gateway 兼容：用户 .env 可设；未设则回退工作区根）
                         _claw_root = os.environ.get('CLAW_ROOT', '')
-                        if '{CLAW_ROOT}' in val and _claw_root:
-                            val = val.replace('{CLAW_ROOT}', _claw_root)
+                        if '{CLAW_ROOT}' in val:
+                            val = val.replace('{CLAW_ROOT}', _claw_root) if _claw_root else _workspace
                         # Resolve {workspace_root} references
                         if '{workspace_root}' in val and 'workspace_root' in cfg:
                             val = val.replace('{workspace_root}', cfg['workspace_root'])
@@ -69,10 +90,12 @@ def _load_config():
         pass
 
     # Apply defaults for keys that may not be in config.md yet
+    _ws_root = _workspace_root()
+    _workspace = os.path.join(_ws_root, 'workspace')
     defaults = {
-        'workspace_root': os.path.expanduser('~/.qclaw/workspace'),
-        'growth_dir': os.path.join(os.path.expanduser('~/.qclaw/workspace'), 'memory', 'octopus', 'growth'),
-        'archive_dir': os.path.join(os.path.expanduser('~/.qclaw/workspace'), 'memory', 'octopus', 'archive'),
+        'workspace_root': _workspace,
+        'growth_dir': os.path.join(_workspace, 'memory', 'octopus', 'growth'),
+        'archive_dir': os.path.join(_workspace, 'memory', 'octopus', 'archive'),
         'stance_history_max_entries': '10',
         'stance_history_skip_sessions': '',
         'relationship_network_enabled': 'false',
