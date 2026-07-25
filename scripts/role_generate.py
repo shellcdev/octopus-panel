@@ -73,7 +73,8 @@ def _load_local_roles():
     if merge:
         try:
             data = growth_api._read_growth_record()
-            for r in data.get('roles', []):
+            # _read_growth_record 已解包，返回 list，直接遍历（勿用 data.get）
+            for r in data:
                 rid = r.get('role_id')
                 if not rid:
                     continue
@@ -134,7 +135,8 @@ def _inject_growth_hint(role_name):
     """若本地成长库有同名角色，返回其最新立场作为生成提示注入。"""
     try:
         data = growth_api._read_growth_record()
-        for r in data.get('roles', []):
+        # _read_growth_record 已解包，返回 list，直接遍历（勿用 data.get）
+        for r in data:
             if r.get('role_id') == role_name:
                 last = (r.get('stance_history') or [{}])[-1]
                 return last.get('stance')

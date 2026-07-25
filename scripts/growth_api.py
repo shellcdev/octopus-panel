@@ -126,7 +126,8 @@ def _is_local_role_name(role_name):
     # 1) 成长记录已有该角色
     try:
         data = _read_growth_record()
-        for r in data.get('roles', []):
+        # _read_growth_record 已解包，返回 list，直接遍历（勿用 data.get）
+        for r in data:
             if r.get('role_id') == role_name:
                 return True
     except Exception:

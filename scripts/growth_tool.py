@@ -177,13 +177,245 @@ def cmd_migrate(args):
 
 # ============================================================ cmd: render
 def cmd_render(args):
-    from growth_render import render_full_profile  # 复用渲染逻辑模块
     profile = render_full_profile(args.role_id)
     if not profile:
         print('No growth data found for role: ' + args.role_id)
         return 0
     print(profile)
     return 0
+
+
+# ============================================================ render (inlined from growth_render)
+def render_full_profile(role_id):
+    """
+    Render complete growth card for a role.
+    Returns markdown-formatted string, or empty string if no data.
+    """
+    growth_data = growth_api.get_role_growth(role_id)
+    if growth_data is None:
+        return ''
+
+    lines = []
+
+    # ─── Section 1: Header ───
+    lines.append('📊 角色成长卡 — {}'.format(role_id))
+    lines.append('')
+    level = growth_data.get('level', 1)
+    total = growth_data.get('total_sessions', 0)
+    exp = growth_data.get('exp', 0)
+    lines.append('等级：Lv.{}  |  场次：{}场  |  经验：{}'.format(level, total, exp))
+    lines.append('')
+
+    # ─── Section 2: Achievement Wall ───
+    achievements = growth_data.get('achievements', [])
+    if achievements:
+        lines.append('🏆 成就墙')
+        lines.append('')
+        for a in achievements:
+            name = a.get('name', '?')
+            desc = a.get('description', '')
+            lines.append('  ✅ {} — {}'.format(name, desc))
+        lines.append('')
+
+    # ─── Section 3: Growth Tree with narrative ───
+    stance_history = growth_data.get('stance_history', [])
+    if stance_history:
+        lines.append('🌿 成长树{}'.format(_build_narrative_summary(stance_history, role_id)))
+        lines.append('')
+        for i, entry in enumerate(stance_history):
+            topic = entry.get('topic', '?')[:10]
+            stance = entry.get('stance', '?')[:30]
+            period = _period_label(i, len(stance_history), stance)
+            lines.append('  第{}场 —— {}："{}"'.format(i + 1, period, stance))
+        lines.append('')
+
+    # ─── Section 3.5: Career Events ───
+    career_events = growth_data.get('career_events', [])
+    if career_events:
+        sorted_events = sorted(career_events, key=lambda e: e.get('occurred_at', ''), reverse=True)
+        recent_events = sorted_events[:5]
+        lines.append('🎉 生涯事件')
+        lines.append('')
+        for ev in recent_events:
+            desc = ev.get('description', '?')
+            aid = ev.get('event', '')
+            icon = '🎉' if 'MILESTONE' in aid or 'FIRST' in aid else '📌'
+            lines.append('  {} {}'.format(icon, desc))
+        lines.append('')
+
+    # ─── Section 4: Relationship Network ───
+    rel_lines = growth_data.get('relationship_lines', [])
+    if rel_lines and growth_api.is_relationship_enabled():
+        lines.append('🔗 关系网络')
+        lines.append('')
+        for rel in rel_lines:
+            target = rel.get('target_id', '?')
+            status = rel.get('status', '一面之缘')
+            cs = rel.get('co_sessions', 1)
+            rtype = rel.get('relation_type', 'neutral')
+            type_icon = _relation_type_icon(rtype)
+            lines.append('  {} {} —— {}（同场{}次）'.format(type_icon, target, status, cs))
+        lines.append('')
+
+    # ─── Section 5: Statistics Dashboard ───
+    stats = _compute_stats(growth_data)
+    if stats:
+        lines.append('📊 数据统计')
+        lines.append('')
+        for label, val in stats:
+            lines.append('  {}：{}'.format(label, val))
+        lines.append('')
+
+    # ─── Section 6: Tag Wall ───
+    auto_tags = growth_data.get('auto_tags', [])
+    manual_tags = growth_data.get('manual_tags', [])
+    if auto_tags or manual_tags:
+        lines.append('🏷️ 标签')
+        lines.append('')
+        for mt in manual_tags:
+            tag = mt.get('tag', '?') if isinstance(mt, dict) else mt
+            lines.append('  🔖 {} [手动]'.format(tag))
+        for at in auto_tags:
+            lines.append('  🔖 {} [自动]'.format(at))
+        lines.append('')
+
+    return '\n'.join(lines).strip()
+
+
+def _build_narrative_summary(stance_history, role_id):
+    """
+    Auto-generate a one-line narrative summary ("心路总结").
+    """
+    if len(stance_history) < 2:
+        return ''
+
+    first = stance_history[0].get('stance', '')
+    last = stance_history[-1].get('stance', '')
+
+    if first == last:
+        return ' — 从一而终，从未动摇'
+
+    first_short = first[:12]
+    last_short = last[:12]
+
+    has_condition = '条件' in last or '但' in last
+
+    narrative = ''
+    if has_condition:
+        narrative = '学会了加条件——不再是无脑坚持了'
+    elif len(last) > len(first):
+        narrative = '表达越来越丰富了'
+    else:
+        narrative = '观点有了变化——开始换角度看问题了'
+
+    return ' — 从"{}"到"{}"，{}'.format(first_short, last_short, narrative)
+
+
+def _period_label(index, total, stance):
+    """Generate a descriptive period label for the growth tree."""
+    if total <= 1:
+        return '初登场'
+
+    if index == 0:
+        return '初登场期'
+
+    if index == total - 1:
+        if '条件' in stance or '但' in stance:
+            return '条件反思期'
+        return '最新立场期'
+
+    ratio = index / total
+    if ratio < 0.3:
+        return '早期立场期'
+    elif ratio < 0.6:
+        return '中期演化期'
+    else:
+        return '近期调整期'
+
+
+def _relation_type_icon(rel_type):
+    """Map relation type to emoji icon."""
+    mapping = {
+        '欠人情': '🤝',
+        '合作': '🤝',
+        '对抗': '⚔️',
+        '中立': '➖',
+        'neutral': '➖',
+        'friendly': '👍',
+        'hostile': '👎',
+    }
+    return mapping.get(rel_type, '➖')
+
+
+def _compute_stats(growth_data):
+    """
+    Compute interesting statistics for the stats dashboard.
+    Returns list of (label, value) tuples.
+    """
+    stats = []
+    stance_history = growth_data.get('stance_history', [])
+
+    topic_counts = {}
+    for entry in stance_history:
+        topic = entry.get('topic', '')
+        if topic:
+            cat = growth_api._classify_topic(topic)
+            cat_cn = {'career': '职场决策', 'financial': '财务投资', 'family': '家庭感情',
+                      'technical': '技术选型', 'general': '综合话题'}.get(cat, '综合话题')
+            topic_counts[cat_cn] = topic_counts.get(cat_cn, 0) + 1
+
+    if topic_counts:
+        sorted_topics = sorted(topic_counts.items(), key=lambda x: -x[1])
+        top3 = ' / '.join(['{}({}场)'.format(t, c) for t, c in sorted_topics[:3]])
+        stats.append(('最爱讨论', top3))
+
+    rel_lines = growth_data.get('relationship_lines', [])
+    if rel_lines:
+        strongest = max(rel_lines, key=lambda r: r.get('co_sessions', 0))
+        cs = strongest.get('co_sessions', 0)
+        target = strongest.get('target_id', '?')
+        if cs >= 2:
+            stats.append(('最常对抗', '{}（同场{}次）'.format(target, cs)))
+
+    scores = [s.get('score') for s in stance_history if s.get('score') is not None]
+    if scores:
+        avg = sum(scores) / len(scores)
+        stats.append(('平均讨论评分', '{:.0f}/100'.format(avg)))
+
+    rang_count = sum(1 for s in stance_history
+                     if '条件' in s.get('stance', '') or '但' in s.get('stance', ''))
+    if rang_count > 0:
+        stats.append(('[让] 次数', '{}次'.format(rang_count)))
+
+    return stats
+
+
+def render_guidance():
+    """
+    Render conditional guidance hint for relationship network.
+    """
+    if not growth_api._is_guidance_needed():
+        return ''
+
+    lines = []
+    lines.append('')
+    lines.append('💡 有些角色之间开始建立关系了。说"开启关系网络"解锁。🔗')
+    lines.append('')
+    return '\n'.join(lines)
+
+
+def render_session_override_notice(override_value):
+    """
+    Render confirmation notice when user sets session override.
+    override_value: True = restored, False = disabled
+    """
+    if override_value is False:
+        return ('好的。这场讨论临时关闭关系网络——\n'
+                '角色之间的关系信息不会被注入讨论，对抗位不受关系影响。\n'
+                '下一场自动恢复。\n'
+                '说"这轮恢复关系"可以提前恢复。')
+    else:
+        return '好的，这场讨论的关系网络已恢复。'
 
 
 # ============================================================ main
