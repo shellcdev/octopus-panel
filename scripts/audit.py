@@ -92,9 +92,15 @@ def cmd_docs():
         print(f'  {basename}: {ver}')
 
     existing_versions = {k: v for k, v in versions.items() if v not in ('（无版本号）', '（文件不存在）')}
-    if existing_versions:
-        all_same = len(set(existing_versions.values())) == 1
-        print(f'是否全部一致: {all_same}')
+    # 核心文档（配置/手册/技能入口/路线图）须保持同一版本号；references/ 下参考文档版本号可独立演进，不纳入一致性校验
+    CORE_DOCS = {'config.md', 'README.md', 'SKILL.md', 'TODO.md'}
+    core_versions = {k: v for k, v in existing_versions.items() if k in CORE_DOCS}
+    if core_versions:
+        all_same = len(set(core_versions.values())) == 1
+        print(f'核心文档版本是否一致: {all_same}')
+        ref_versions = {k: v for k, v in existing_versions.items() if k not in CORE_DOCS}
+        if ref_versions:
+            print(f'参考文档版本（独立演进，不校验）: {sorted(set(ref_versions.values()))}')
 
     # 4. CHANGELOG 最新版本
     cl_fp = os.path.join(SKILL_ROOT, 'CHANGELOG.md')

@@ -11,9 +11,8 @@
 
 **请勿在公开 issue 中披露安全漏洞。**
 
-请通过以下私报通道之一：
-- **GitHub Security Advisory**：进入本仓库 → `Security` → `Report a vulnerability`；
-- 或在仓库 Issues 中**私信维护者**并注明"安全漏洞"，由维护者转为私报。
+请通过以下私报通道报告：
+- **GitHub Security Advisory**（唯一私报入口）：进入本仓库 → `Security` → `Report a vulnerability`。
 
 我们会尽快确认、评估，并在修复后与你协调披露时间。
 

@@ -39,7 +39,7 @@ def _workspace_root():
 
     脚本路径: <root>/.qclaw/skills/assist-Z-octopus-panel/scripts/growth_api.py
     上溯 4 层: scripts -> assist-Z-octopus-panel -> skills -> .qclaw
-    返回 .qclaw 父目录；数据落 <root>/.qclaw/workspace（保留原结构，仅去除 ~ 硬编码）。
+    返回 .qclaw 目录本身；数据落 <root>/.qclaw/workspace（保留原结构，仅去除 ~ 硬编码）。
     QClaw 云端与本地 OpenClaw 下均指向技能自己的工作区，数据随技能走。
     """
     here = os.path.abspath(__file__)
@@ -63,6 +63,9 @@ def _load_config():
                 line = line.strip()
                 if '|' in line and line.count('|') >= 3:
                     parts = [p.strip() for p in line.split('|')]
+                    # 跳过 markdown 表格分隔行（如 |---|---|），避免被误解析为键 '---'
+                    if parts[1].strip('-') == '':
+                        continue
                     if len(parts) >= 4 and parts[1] and parts[2] and parts[1] != '键':
                         # 配置表键/值单元格被反引号包裹（如 `workspace_root`），需剥除反引号
                         # 否则 key 带反引号导致跨键引用替换失败、默认值覆盖，换机器改 config 无效

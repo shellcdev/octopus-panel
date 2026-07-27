@@ -87,6 +87,7 @@
 |---|---|---|
 | `topic_slug_length` | `6` | 归档文件名 `{topic}` 截断字数，如 `20260609-开咖啡馆.md` |
 | `cite_verify` | `true` | 引用源数据校验开关（默认开）：开启后 spawn prompt 注入「引用须真实可核验，禁编造法条/案例/数据」；石叔遇强事实主张可派 researcher 实时核验；小结标「未核验」风险；关闭退回宽松 |
+| `archive_keyword_count` | `8` | 讨论归档关键词/标签提取上限（控制归档文件 `**Tags**:` 标签数与「关联历史」检索关键词数；`extract_keywords` 按出现顺序取前 N 个中文实词，超出截断）|
 
 > 实现状态：✅ 已实装。开关见 `cite_verify`；机制见 SKILL.md 硬性规则 #10 + references/templates.md「🔍 引用校验指令」节 + references/summary-format.md「未核验风险标注」节。
 

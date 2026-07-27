@@ -200,13 +200,21 @@ cp -r octopus-panel ~/.qclaw/skills/
 - 优化规则（需说明优化理由 + 影响范围）
 - 修复文档错误（typo、断开链接、格式问题）
 
+提交方式：开 Issue 或 PR（详见 [CONTRIBUTING.md](CONTRIBUTING.md)）。
+
 ---
 
 ## 📬 反馈通道
 
+### 作为使用者（运行技能时）
 用完了觉得哪里不好用？直接说 **"反馈：[你的意见]"** ，石叔会记下来下次改。
 
 常见问题：
 - 角色发言太模板化 → 反馈给我，我加软肋和触发后状态
 - 讨论跑题了 → 反馈给我，我优化诊断环节
 - 想要某个垂直行业的角色（如医疗/法律/教育）→ 反馈给我，我加进模板库
+
+### 作为开源贡献者
+- 功能建议 / Bug 报告：开 [GitHub Issue](https://github.com/shellcdev/octopus-panel/issues)
+- 提交改动：Fork 本仓库 → 修改 → 开 PR（流程见 [CONTRIBUTING.md](CONTRIBUTING.md)）
+- 安全漏洞：**勿开公开 issue**，请走 [SECURITY.md](SECURITY.md) 的私报通道
