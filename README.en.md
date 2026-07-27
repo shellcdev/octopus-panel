@@ -181,7 +181,7 @@ cp -r octopus-panel ~/.qclaw/skills/        # OpenClaw  (Windows: %USERPROFILE%\
 
 ## 🤝 Contribution Guide
 
-Feedback and submissions welcome:
+Feedback and submissions welcome. **How to submit:** open a [GitHub Issue](https://github.com/shellcdev/octopus-panel/issues) or send a Pull Request (see [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup and PR checklist). For security vulnerabilities, private-report via [SECURITY.md](SECURITY.md) — do **not** open a public issue.
 
 - New role template (must pass pre-flight risk-control three-questions)
 - New discussion case (must be complete, with edge scenarios)
@@ -192,9 +192,16 @@ Feedback and submissions welcome:
 
 ## 📬 Feedback Channel
 
-Finished and something felt off? Just say **"反馈：[your comment]"** and 石叔 will note it for next time.
+Finished and something felt off?
 
-Common issues:
+**As a user** — just say **"反馈：[your comment]"** during a discussion and 石叔 will note it for next time.
+
+**As an open-source contributor** — submit via GitHub:
+- Open a [GitHub Issue](https://github.com/shellcdev/octopus-panel/issues) (bug / feature / question)
+- Or fork and open a Pull Request — see [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup and PR checklist
+- Security vulnerability? Private-report via [SECURITY.md](SECURITY.md) — **do not** open a public issue
+
+Common issues (as a user):
 - Role speech too templated → tell me, I'll add soft-spots and post-trigger states
 - Discussion went off-topic → tell me, I'll improve the diagnostic step
 - Want a vertical-industry role (e.g. medical / legal / education) → tell me, I'll add it to the template library
