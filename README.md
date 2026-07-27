@@ -72,6 +72,27 @@
 
 ## 🚀 快速上手
 
+### 🚀 开源用户：先安装（把仓库变成可用技能）
+
+> 本仓库就是技能源码。要让客户端加载它，须放进对应 AI 客户端的 `skills/` 目录。
+
+**OpenClaw（qclaw）**
+```bash
+git clone https://github.com/shellcdev/octopus-panel.git
+# Windows：%USERPROFILE%\.qclaw\skills\   |  Linux/macOS：~/.qclaw/skills/
+cp -r octopus-panel ~/.qclaw/skills/
+```
+重启客户端，直接抛一个两难问题（如"该不该辞职"）即触发圆桌流程。
+
+**WorkBuddy**
+1. 克隆/下载本仓库；
+2. 放入用户级技能目录 `~/.workbuddy/skills/octopus-panel/`；
+3. 重启 WorkBuddy，按 `SKILL.md` 的 `name`（octopus-panel）自动加载。
+
+**验证安装**
+- 脚本自测：`python scripts/tests/run_tests.py -q` 应全绿；
+- 客户端内：说"用八爪议事厅讨论：XX"或直接抛多方视角问题，应进入圆桌流程。
+
 ### 第一次用（5分钟）
 
 1. 读 `SKILL.md` 前200行（总览+硬性规则+四种模式）

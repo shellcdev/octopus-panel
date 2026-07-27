@@ -71,6 +71,16 @@
 
 ## 🚀 Quick Start
 
+### 🚀 Open-source users: install first
+
+This repo *is* the skill source. To load it in a client, drop it into that client's `skills/` directory. Full steps (clone paths for OpenClaw / WorkBuddy, verification commands) live in the Chinese **[README.md](README.md)** → "快速上手 / 开源用户：先安装". In short:
+
+```bash
+git clone https://github.com/shellcdev/octopus-panel.git
+cp -r octopus-panel ~/.qclaw/skills/        # OpenClaw  (Windows: %USERPROFILE%\.qclaw\skills\)
+# or  ~/.workbuddy/skills/octopus-panel/     # WorkBuddy
+```
+
 ### First use (5 min)
 
 1. Read the first 200 lines of `SKILL.md` (overview + hard rules + four modes)

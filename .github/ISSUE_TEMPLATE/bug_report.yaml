@@ -1,0 +1,42 @@
+name: Bug report / 问题报告
+description: 报告八爪议事厅的 bug 或异常行为
+labels: [ "bug" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量提供复现步骤，便于定位。
+  - type: textarea
+    id: what
+    attributes:
+      label: 现象
+      description: 实际发生了什么？
+      placeholder: 描述你看到的行为
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期
+      description: 你期望发生什么？
+      placeholder: 描述正确的行为
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      description: 如何稳定复现？（贴上相关的问题/指令）
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: false
+  - type: textarea
+    id: env
+    attributes:
+      label: 环境
+      description: 客户端（OpenClaw / WorkBuddy）、操作系统、版本号
+      placeholder: e.g. OpenClaw on Windows 11, v3.1.37
+    validations:
+      required: false
